@@ -1,0 +1,16 @@
+
+  Id     Duration CommandLine
+  --     -------- -----------
+   1        0.089 ls
+   2        0.015 cd .\Documents\
+   3        0.239 touch 'catalisa'
+   4        0.030 New-Item -Path . -Name "catalisa" -ItemType "Directory"
+   5        0.023 New-Item -Path .\catalisa -Name "exercicios" -ItemType "Directory"
+   6        0.017 cd .\catalisa\exercicios
+   7        0.091 echo "2, 4, 6, 8, 10" > numeros.txt
+   8        0.028 cat numeros.txt
+   9        0.023 Copy-Item -Path .\numeros.txt -Destination .\numeros2.txt
+  10        0.027 Get-ChildItem -Recurse
+  11        0.028 Get-ChildItem -Recurse -File
+  12        0.018 Remove-Item -Path .\numeros.txt
+
