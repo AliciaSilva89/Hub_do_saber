@@ -1,36 +1,45 @@
 package br.com.hubdosaber.user.model;
 
 import jakarta.persistence.*;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "user_entity")
+@Table(name = "users")
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
+    private String matriculation;
+    private String password;
     private String name;
-    private int age;
-    private String gender;
-    private String course;
-    private String university;
+    private String email;
 
-    private LocalDate birthDate;
+    @Column(name = "course_id")
+    private UUID courseId;
 
-    public User() {}
+    @Column(name = "profile_id")
+    private Integer profileId;
 
-    public User(String name, int age, String gender, String course, String university, LocalDate birthDate) {
-        this.name = name;
-        this.age = age;
-        this.gender = gender;
-        this.course = course;
-        this.university = university;
-        this.birthDate = birthDate;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    public User() {
     }
 
+
+    public User(UUID id, String matriculation, String password, String name, String email, UUID courseId, Integer profileId, LocalDateTime createdAt) {
+        this.id = id;
+        this.matriculation = matriculation;
+        this.password = password;
+        this.name = name;
+        this.email = email;
+        this.courseId = courseId;
+        this.profileId = profileId;
+        this.createdAt = createdAt;
+    }
 
     public UUID getId() {
         return id;
@@ -38,6 +47,22 @@ public class User {
 
     public void setId(UUID id) {
         this.id = id;
+    }
+
+    public String getMatriculation() {
+        return matriculation;
+    }
+
+    public void setMatriculation(String matriculation) {
+        this.matriculation = matriculation;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public String getName() {
@@ -48,44 +73,35 @@ public class User {
         this.name = name;
     }
 
-    public int getAge() {
-        return age;
+    public String getEmail() {
+        return email;
     }
 
-    public void setAge(int age) {
-        this.age = age;
+    public void setEmail(String email) {
+        this.email = email;
     }
 
-    public String getGender() {
-        return gender;
+    public UUID getCourseId() {
+        return courseId;
     }
 
-    public void setGender(String gender) {
-        this.gender = gender;
+    public void setCourseId(UUID courseId) {
+        this.courseId = courseId;
     }
 
-    public String getCourse() {
-        return course;
+    public Integer getProfileId() {
+        return profileId;
     }
 
-    public void setCourse(String course) {
-        this.course = course;
+    public void setProfileId(Integer profileId) {
+        this.profileId = profileId;
     }
 
-    public String getUniversity() {
-        return university;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
-    public void setUniversity(String university) {
-        this.university = university;
-    }
-
-    public LocalDate getBirthDate() {
-        return birthDate;
-    }
-
-    public void setBirthDate(LocalDate birthDate) {
-        this.birthDate = birthDate;
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }
-

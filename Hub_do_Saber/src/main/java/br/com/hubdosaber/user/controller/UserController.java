@@ -1,5 +1,6 @@
 package br.com.hubdosaber.user.controller;
 
+
 import br.com.hubdosaber.user.model.User;
 import br.com.hubdosaber.user.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,7 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-        import java.util.List;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -35,6 +37,7 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<User> createUser(@RequestBody User user) {
+        user.setCreatedAt(LocalDateTime.now());
         User savedUser = userRepository.save(user);
         return new ResponseEntity<>(savedUser, HttpStatus.CREATED);
     }
@@ -45,12 +48,12 @@ public class UserController {
 
         if (userOptional.isPresent()) {
             User existingUser = userOptional.get();
+            existingUser.setMatriculation(userDetails.getMatriculation());
+            existingUser.setPassword(userDetails.getPassword());
             existingUser.setName(userDetails.getName());
-            existingUser.setAge(userDetails.getAge());
-            existingUser.setGender(userDetails.getGender());
-            existingUser.setCourse(userDetails.getCourse());
-            existingUser.setUniversity(userDetails.getUniversity());
-            existingUser.setBirthDate(userDetails.getBirthDate());
+            existingUser.setEmail(userDetails.getEmail());
+            existingUser.setCourseId(userDetails.getCourseId());
+            existingUser.setProfileId(userDetails.getProfileId());
 
             User updatedUser = userRepository.save(existingUser);
             return new ResponseEntity<>(updatedUser, HttpStatus.OK);
