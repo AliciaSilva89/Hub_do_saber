@@ -17,7 +17,7 @@ services:
 
   # Serviço para a sua aplicação Spring Boot
   app:
-    build: . # Constrói a imagem Docker a partir do Dockerfile no diretório atual
+    build: .. # Constrói a imagem Docker a partir do Dockerfile no diretório atual
     container_name: hubdosaber_app_container
     restart: always
     ports:
