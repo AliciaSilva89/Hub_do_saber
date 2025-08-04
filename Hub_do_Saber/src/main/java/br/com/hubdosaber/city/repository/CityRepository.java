@@ -1,7 +1,7 @@
-package br.com.hubdosaber.Hub_do_Saber.city.repository;
+package br.com.hubdosaber.city.repository;
 
 
-import br.com.hubdosaber.Hub_do_Saber.city.model.City;
+import br.com.hubdosaber.city.model.City;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

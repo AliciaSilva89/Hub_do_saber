@@ -1,7 +1,7 @@
-package br.com.hubdosaber.Hub_do_Saber.city.controller;
+package br.com.hubdosaber.city.controller;
 
-import br.com.hubdosaber.Hub_do_Saber.city.model.City;
-import br.com.hubdosaber.Hub_do_Saber.city.service.CityService;
+import br.com.hubdosaber.city.model.City;
+import br.com.hubdosaber.city.service.CityService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

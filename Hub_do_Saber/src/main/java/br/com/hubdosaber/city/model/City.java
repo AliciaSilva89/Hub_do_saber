@@ -1,7 +1,7 @@
-package br.com.hubdosaber.Hub_do_Saber.city.model;
+package br.com.hubdosaber.city.model;
 
 
-import br.com.hubdosaber.Hub_do_Saber.city.repository.State;
+import br.com.hubdosaber.city.repository.State;
 import jakarta.persistence.*;
 
 @Entity

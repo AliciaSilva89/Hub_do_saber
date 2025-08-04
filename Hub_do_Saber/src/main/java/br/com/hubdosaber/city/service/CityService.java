@@ -1,8 +1,8 @@
-package br.com.hubdosaber.Hub_do_Saber.city.service;
+package br.com.hubdosaber.city.service;
 
 
-import br.com.hubdosaber.Hub_do_Saber.city.model.City;
-import br.com.hubdosaber.Hub_do_Saber.city.repository.CityRepository;
+import br.com.hubdosaber.city.model.City;
+import br.com.hubdosaber.city.repository.CityRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
