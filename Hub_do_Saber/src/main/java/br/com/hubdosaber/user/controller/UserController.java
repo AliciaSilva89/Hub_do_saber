@@ -3,6 +3,7 @@ package br.com.hubdosaber.user.controller;
 
 import br.com.hubdosaber.user.model.User;
 import br.com.hubdosaber.user.repository.UserRepository;
+import br.com.hubdosaber.user.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,25 +21,12 @@ public class UserController {
 
     @Autowired
     private UserRepository userRepository;
-
-
-    @GetMapping
-    public ResponseEntity<List<User>> getAllUsers() {
-        List<User> users = userRepository.findAll();
-        return new ResponseEntity<>(users, HttpStatus.OK);
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable UUID id) {
-        Optional<User> user = userRepository.findById(id);
-        return user.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
-                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
-    }
+    @Autowired
+    private UserService userService;
 
     @PostMapping
     public ResponseEntity<User> createUser(@RequestBody User user) {
-        user.setCreatedAt(LocalDateTime.now());
-        User savedUser = userRepository.save(user);
+        User savedUser = userService.createUser(user);
         return new ResponseEntity<>(savedUser, HttpStatus.CREATED);
     }
 
@@ -52,8 +40,6 @@ public class UserController {
             existingUser.setPassword(userDetails.getPassword());
             existingUser.setName(userDetails.getName());
             existingUser.setEmail(userDetails.getEmail());
-            existingUser.setCourseId(userDetails.getCourseId());
-            existingUser.setProfileId(userDetails.getProfileId());
 
             User updatedUser = userRepository.save(existingUser);
             return new ResponseEntity<>(updatedUser, HttpStatus.OK);
@@ -70,5 +56,18 @@ public class UserController {
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
+    }
+
+    @GetMapping
+    public ResponseEntity<List<User>> getAllUsers() {
+        List<User> users = userRepository.findAll();
+        return new ResponseEntity<>(users, HttpStatus.OK);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<User> getUserById(@PathVariable UUID id) {
+        Optional<User> user = userRepository.findById(id);
+        return user.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
+                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 }

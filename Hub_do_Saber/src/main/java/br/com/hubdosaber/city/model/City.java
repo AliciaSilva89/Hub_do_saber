@@ -3,9 +3,17 @@ package br.com.hubdosaber.city.model;
 
 import br.com.hubdosaber.city.repository.State;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "city")
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
 public class City {
 
     @Id
@@ -16,38 +24,4 @@ public class City {
 
     @Enumerated(EnumType.STRING)
     private State state;
-
-    public City() {
-    }
-
-    public City(String name, State state) {
-        this.name = name;
-        this.state = state;
-    }
-
-    // Getters
-    public Integer getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public State getState() {
-        return state;
-    }
-
-    // Setters
-    public void setId(Integer id) {
-        this.id = id;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public void setState(State state) {
-        this.state = state;
-    }
 }

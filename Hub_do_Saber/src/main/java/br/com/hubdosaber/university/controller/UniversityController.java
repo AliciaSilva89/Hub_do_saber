@@ -58,4 +58,9 @@ public class UniversityController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
+
+    @GetMapping("/teste")
+    public ResponseEntity<String> teste() {
+        return new ResponseEntity<>("Teste de conexão bem-sucedido!", HttpStatus.OK);
+    }
 }

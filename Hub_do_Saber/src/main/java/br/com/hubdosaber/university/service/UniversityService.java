@@ -39,7 +39,6 @@ public class UniversityService {
                 .map(existingUniversity -> {
                     existingUniversity.setName(universityDetails.getName());
                     existingUniversity.setAcronym(universityDetails.getAcronym());
-                    existingUniversity.setCityId(universityDetails.getCityId());
                     return universityRepository.save(existingUniversity);
                 })
                 .orElseThrow(() -> new RuntimeException("University not found with id " + id));
