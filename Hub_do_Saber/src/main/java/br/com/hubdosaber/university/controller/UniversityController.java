@@ -20,19 +20,6 @@ public class UniversityController {
         this.universityService = universityService;
     }
 
-    @GetMapping
-    public ResponseEntity<List<University>> getAllUniversities() {
-        List<University> universities = universityService.findAllUniversities();
-        return new ResponseEntity<>(universities, HttpStatus.OK);
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<University> getUniversityById(@PathVariable UUID id) {
-        return universityService.findUniversityById(id)
-                .map(university -> new ResponseEntity<>(university, HttpStatus.OK))
-                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
-    }
-
     @PostMapping
     public ResponseEntity<University> createUniversity(@RequestBody University university) {
         University savedUniversity = universityService.createUniversity(university);
@@ -59,8 +46,16 @@ public class UniversityController {
         }
     }
 
-    @GetMapping("/teste")
-    public ResponseEntity<String> teste() {
-        return new ResponseEntity<>("Teste de conexão bem-sucedido!", HttpStatus.OK);
+    @GetMapping
+    public ResponseEntity<List<University>> getAllUniversities() {
+        List<University> universities = universityService.findAllUniversities();
+        return new ResponseEntity<>(universities, HttpStatus.OK);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<University> getUniversityById(@PathVariable UUID id) {
+        return universityService.findUniversityById(id)
+                .map(university -> new ResponseEntity<>(university, HttpStatus.OK))
+                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 }

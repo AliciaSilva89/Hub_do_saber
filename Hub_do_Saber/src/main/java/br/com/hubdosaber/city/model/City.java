@@ -3,6 +3,7 @@ package br.com.hubdosaber.city.model;
 
 import br.com.hubdosaber.city.repository.State;
 import jakarta.persistence.*;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,8 +18,8 @@ import lombok.Setter;
 public class City {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
 
     private String name;
 
