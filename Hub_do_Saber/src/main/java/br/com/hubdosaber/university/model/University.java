@@ -1,26 +1,31 @@
 package br.com.hubdosaber.university.model;
 
+import br.com.hubdosaber.course.model.Course;
 import jakarta.persistence.*;
-import java.util.UUID;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
+
+import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "university")
-@AllArgsConstructor
+@Data
 @NoArgsConstructor
-@Getter
-@Setter
+@AllArgsConstructor
 public class University {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
+    @Column(nullable = false)
     private String name;
 
+    @Column(nullable = false)
     private String acronym;
 
+    @OneToMany(mappedBy = "university", fetch = FetchType.LAZY)
+    private List<Course> courses;
 }

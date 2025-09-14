@@ -2,6 +2,7 @@ package br.com.hubdosaber.group.controller;
 
 import br.com.hubdosaber.group.model.StudyGroup;
 import br.com.hubdosaber.group.service.GroupService;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -10,10 +11,10 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/group")
+@AllArgsConstructor
 public class GroupController {
 
-    @Autowired
-    private GroupService groupService;
+    private final GroupService groupService;
 
     @PostMapping
     public ResponseEntity<StudyGroup> createGroup(@RequestBody StudyGroup studyGroup, @AuthenticationPrincipal Jwt principal) {

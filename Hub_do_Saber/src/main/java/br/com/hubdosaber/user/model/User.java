@@ -1,7 +1,10 @@
 package br.com.hubdosaber.user.model;
 
+import br.com.hubdosaber.course.model.Course;
+import br.com.hubdosaber.discipline.model.UserDisciplineInterest;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -30,4 +33,11 @@ public class User {
 
     @Column(nullable = false, unique = true)
     private String email;
+
+    @ManyToOne
+    @JoinColumn(name = "course_id")
+    private Course course;
+
+    @OneToMany(mappedBy = "user", orphanRemoval = true)
+    private Set<UserDisciplineInterest> disciplineInterests;
 }
