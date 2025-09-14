@@ -1,9 +1,12 @@
 package br.com.hubdosaber.group.model;
 
+import br.com.hubdosaber.discipline.model.Discipline;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.util.List;
@@ -37,7 +40,12 @@ public class StudyGroup {
 
     boolean active;
 
+    @ManyToOne
+    @JoinColumn(name = "discipline_id")
+    private Discipline discipline;
+
     @OneToMany(mappedBy = "studyGroup")
     @JsonManagedReference
     private List<UserGroup> userGroups;
+
 }

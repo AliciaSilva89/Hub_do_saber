@@ -2,7 +2,7 @@ CREATE TABLE course
 (
     id            UUID         NOT NULL,
     name          VARCHAR(255) NOT NULL,
-    university_id UUID,
+    university_id UUID         NOT NULL,
     CONSTRAINT pk_course PRIMARY KEY (id)
 );
 
@@ -10,29 +10,30 @@ CREATE TABLE discipline
 (
     id          UUID         NOT NULL,
     name        VARCHAR(255) NOT NULL,
-    description VARCHAR(255) NOT NULL,
+    description VARCHAR(255),
     code        VARCHAR(255) NOT NULL,
-    semester    INTEGER      NOT NULL,
-    course_id   UUID,
+    semester    INTEGER,
+    course_id   UUID         NOT NULL,
     CONSTRAINT pk_discipline PRIMARY KEY (id)
 );
 
 CREATE TABLE study_group
 (
-    id          UUID    NOT NULL,
-    name        VARCHAR(255),
-    description VARCHAR(255),
-    max_members INTEGER NOT NULL,
-    monitoring  BOOLEAN NOT NULL,
-    active      BOOLEAN NOT NULL,
+    id            UUID    NOT NULL,
+    name          VARCHAR(255),
+    description   VARCHAR(255),
+    max_members   INTEGER NOT NULL,
+    monitoring    BOOLEAN NOT NULL,
+    active        BOOLEAN NOT NULL,
+    discipline_id UUID,
     CONSTRAINT pk_study_group PRIMARY KEY (id)
 );
 
 CREATE TABLE university
 (
-    id      UUID NOT NULL,
-    name    VARCHAR(255),
-    acronym VARCHAR(255),
+    id      UUID         NOT NULL,
+    name    VARCHAR(255) NOT NULL,
+    acronym VARCHAR(255) NOT NULL,
     CONSTRAINT pk_university PRIMARY KEY (id)
 );
 
@@ -64,9 +65,6 @@ CREATE TABLE users
     CONSTRAINT pk_users PRIMARY KEY (id)
 );
 
-ALTER TABLE discipline
-    ADD CONSTRAINT uc_discipline_code UNIQUE (code);
-
 ALTER TABLE users
     ADD CONSTRAINT uc_users_email UNIQUE (email);
 
@@ -78,6 +76,9 @@ ALTER TABLE course
 
 ALTER TABLE discipline
     ADD CONSTRAINT FK_DISCIPLINE_ON_COURSE FOREIGN KEY (course_id) REFERENCES course (id);
+
+ALTER TABLE study_group
+    ADD CONSTRAINT FK_STUDY_GROUP_ON_DISCIPLINE FOREIGN KEY (discipline_id) REFERENCES discipline (id);
 
 ALTER TABLE users
     ADD CONSTRAINT FK_USERS_ON_COURSE FOREIGN KEY (course_id) REFERENCES course (id);
