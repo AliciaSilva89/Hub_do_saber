@@ -1,63 +1,31 @@
 package br.com.hubdosaber.university.model;
 
+import br.com.hubdosaber.course.model.Course;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
 import java.util.UUID;
 
 @Entity
 @Table(name = "university")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class University {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
+    @Column(nullable = false)
     private String name;
 
+    @Column(nullable = false)
     private String acronym;
 
-    @Column(name = "city_id")
-    private Integer cityId; // Chave estrangeira para a entidade City
-
-    public University() {
-    }
-
-    public University(String name, String acronym, Integer cityId) {
-        this.name = name;
-        this.acronym = acronym;
-        this.cityId = cityId;
-    }
-
-    // Getters
-    public UUID getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getAcronym() {
-        return acronym;
-    }
-
-    public Integer getCityId() {
-        return cityId;
-    }
-
-    // Setters
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public void setAcronym(String acronym) {
-        this.acronym = acronym;
-    }
-
-    public void setCityId(Integer cityId) {
-        this.cityId = cityId;
-    }
+    @OneToMany(mappedBy = "university", fetch = FetchType.LAZY)
+    private List<Course> courses;
 }
