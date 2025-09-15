@@ -1,20 +1,16 @@
 package br.com.hubdosaber.user.controller;
 
-
 import br.com.hubdosaber.user.dto.UserDTO;
-import br.com.hubdosaber.user.model.User;
-import br.com.hubdosaber.user.repository.UserRepository;
 import br.com.hubdosaber.user.request.CreateUserRequest;
+import br.com.hubdosaber.user.request.UpdateUserRequest;
 import br.com.hubdosaber.user.service.UserService;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -23,6 +19,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/users")
 @AllArgsConstructor
+@CrossOrigin(origins = "http://localhost:8081")
 public class UserController {
 
     private final UserService userService;
@@ -43,7 +40,7 @@ public class UserController {
     public ResponseEntity<UserDTO> getUserById(@PathVariable("id") UUID id) {
         Optional<UserDTO> user = userService.findUserDTOById(id);
         return user.map(ResponseEntity::ok)
-            .orElse(ResponseEntity.notFound().build());
+                .orElse(ResponseEntity.notFound().build());
     }
     
     @GetMapping("/me")
@@ -52,7 +49,14 @@ public class UserController {
         UUID id = UUID.fromString(userId);
         Optional<UserDTO> user = userService.findUserDTOById(id);
         return user.map(ResponseEntity::ok)
-            .orElse(ResponseEntity.notFound().build());
+                .orElse(ResponseEntity.notFound().build());
     }
 
+    @PutMapping("/me")
+    public ResponseEntity<UserDTO> updateCurrentUser(@RequestBody UpdateUserRequest request, @AuthenticationPrincipal Jwt principal) {
+        String userId = principal.getSubject();
+        UUID id = UUID.fromString(userId);
+        UserDTO updatedUser = userService.updateUser(id, request);
+        return ResponseEntity.ok(updatedUser);
+    }
 }

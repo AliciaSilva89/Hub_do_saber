@@ -1,6 +1,7 @@
 package br.com.hubdosaber.group.dto;
 
 import br.com.hubdosaber.group.model.StudyGroup;
+import br.com.hubdosaber.group.model.UserGroupType;
 import br.com.hubdosaber.user.dto.UserMemberDTO;
 import br.com.hubdosaber.user.dto.UserDTO.CourseDTO;
 import java.util.ArrayList;
@@ -25,8 +26,10 @@ public class StudyGroupDetailDTO {
     private String courseName;
     private String universityName;
     private List<UserMemberDTO> members = new ArrayList<>();
+    private UUID ownerId; // Adicionado para a verificação de permissão
+    private String ownerName; // Adicionado para exibir o nome do dono
 
-    public  StudyGroupDetailDTO(StudyGroup group) {
+    public StudyGroupDetailDTO(StudyGroup group) {
         this.id = group.getId();
         this.name = group.getName();
         this.description = group.getDescription();
@@ -40,6 +43,10 @@ public class StudyGroupDetailDTO {
 
         this.members = group.getUserGroups().stream()
                 .map(userGroup -> {
+                    if (userGroup.getType() == UserGroupType.OWNER) {
+                        this.ownerId = userGroup.getUser().getId();
+                        this.ownerName = userGroup.getUser().getName();
+                    }
                     var user = userGroup.getUser();
                     var courseDTO = user.getCourse() != null
                         ? new CourseDTO(user.getCourse().getId(), user.getCourse().getName())

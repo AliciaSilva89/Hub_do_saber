@@ -2,10 +2,10 @@ package br.com.hubdosaber.group.controller;
 
 import br.com.hubdosaber.group.model.StudyGroup;
 import br.com.hubdosaber.group.request.CreateGroupRequest;
+import br.com.hubdosaber.group.request.UpdateGroupRequest; 
 import br.com.hubdosaber.group.service.GroupService;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -34,7 +34,7 @@ public class GroupController {
 
     @GetMapping
     public ResponseEntity<?> listGroups(@RequestParam(value = "mygroup", required = false) Boolean myGroup,
-                                        @AuthenticationPrincipal Jwt principal) {
+                                         @AuthenticationPrincipal Jwt principal) {
         String userId = principal.getSubject();
         if (Boolean.TRUE.equals(myGroup)) {
             return ResponseEntity.ok(groupService.listGroupsByUser(userId));
@@ -46,5 +46,13 @@ public class GroupController {
     @GetMapping("/{id}")
     public ResponseEntity<?> getGroupById(@PathVariable("id") String groupId){
         return ResponseEntity.ok(groupService.getGroupDetailById(groupId));
+    }
+    
+    // Novo endpoint para atualizar um grupo
+    @PutMapping("/{id}")
+    public ResponseEntity<Void> updateGroup(@PathVariable("id") String groupId, @RequestBody UpdateGroupRequest updateGroupRequest, @AuthenticationPrincipal Jwt principal) {
+        String userId = principal.getSubject();
+        groupService.updateGroup(groupId, updateGroupRequest, userId);
+        return ResponseEntity.ok().build();
     }
 }

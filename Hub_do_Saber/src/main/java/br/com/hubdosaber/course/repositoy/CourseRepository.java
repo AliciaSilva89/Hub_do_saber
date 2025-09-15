@@ -6,8 +6,13 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.Optional;
 
 @Repository
 public interface CourseRepository extends JpaRepository<Course, UUID> {
     List<Course> findByUniversityId(UUID universityId);
+    Optional<Course> findByName(String name);
+    Optional<Course> findByNameIgnoreCase(String name);
+
+    
 }

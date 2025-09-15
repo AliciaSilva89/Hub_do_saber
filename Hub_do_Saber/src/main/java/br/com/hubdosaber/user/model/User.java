@@ -3,7 +3,6 @@ package br.com.hubdosaber.user.model;
 import br.com.hubdosaber.course.model.Course;
 import br.com.hubdosaber.discipline.model.UserDisciplineInterest;
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
