@@ -1,0 +1,26 @@
+# Build outputs
+target/
+
+# VCS
+.git/
+.gitignore
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Maven wrapper cache
+.mvn/wrapper/
+.mvn/
+
+# Misc
+node_modules/
+
