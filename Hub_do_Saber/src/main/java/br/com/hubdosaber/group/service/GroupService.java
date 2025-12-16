@@ -1,6 +1,5 @@
 package br.com.hubdosaber.group.service;
 
-import br.com.hubdosaber.discipline.model.Discipline;
 import br.com.hubdosaber.discipline.repository.DisciplineRepository;
 import br.com.hubdosaber.group.dto.StudyGroupDetailDTO;
 import br.com.hubdosaber.group.dto.StudyGroupDTO;
@@ -28,10 +27,13 @@ public class GroupService {
     private final DisciplineRepository disciplineRepository;
 
     public StudyGroup createGroup(CreateGroupRequest createGroupRequest, String userId) {
-        User user = userRepository.findById(UUID.fromString(userId)).orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+        User user = userRepository.findById(UUID.fromString(userId))
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
 
-        Discipline discipline = disciplineRepository.findById(createGroupRequest.getDisciplineId())
-            .orElseThrow(() -> new RuntimeException("Discipline not found with id: " + createGroupRequest.getDisciplineId()));
+    
+        var discipline = disciplineRepository.findById(createGroupRequest.getDisciplineId())
+                .orElseThrow(() -> new RuntimeException(
+                        "Discipline not found with id: " + createGroupRequest.getDisciplineId()));
 
         StudyGroup studyGroup = new StudyGroup();
         studyGroup.setName(createGroupRequest.getName());
@@ -47,76 +49,107 @@ public class GroupService {
         return savedStudyGroup;
     }
 
-    // Novo método para atualizar o grupo
+    
     public void updateGroup(String groupId, UpdateGroupRequest updateGroupRequest, String userId) {
-        StudyGroup group = groupRepository.findById(UUID.fromString(groupId))
-            .orElseThrow(() -> new RuntimeException("Group not found with id: " + groupId));
+        
+        StudyGroup group = groupRepository.findGroupDetailById(UUID.fromString(groupId))
+                .orElseThrow(() -> new RuntimeException("Group not found with id: " + groupId));
 
-        // Lógica de permissão: só o dono pode editar
-        if (!group.getId().toString().equals(userId)) {
+        
+        boolean isOwner = group.getUserGroups().stream()
+                .anyMatch(ug -> ug.getType() == UserGroupType.OWNER && ug.getUser().getId().toString().equals(userId));
+
+        if (!isOwner) {
             throw new RuntimeException("You are not the owner of this group and cannot edit it.");
         }
 
+        
         if (updateGroupRequest.getName() != null) {
             group.setName(updateGroupRequest.getName());
         }
         if (updateGroupRequest.getDescription() != null) {
             group.setDescription(updateGroupRequest.getDescription());
         }
-        // ... (outros campos que você queira atualizar) ...
+        if (updateGroupRequest.getMaxMembers() != null) {
+            group.setMaxMembers(updateGroupRequest.getMaxMembers());
+        }
+        if (updateGroupRequest.getMonitoring() != null) {
+            group.setMonitoring(updateGroupRequest.getMonitoring());
+        }
+        if (updateGroupRequest.getActive() != null) {
+            group.setActive(updateGroupRequest.getActive());
+        }
+
+        if (updateGroupRequest.getDisciplineId() != null
+                && !updateGroupRequest.getDisciplineId().equals(group.getDiscipline().getId())) {
+            var discipline = disciplineRepository.findById(updateGroupRequest.getDisciplineId())
+                    .orElseThrow(() -> new RuntimeException(
+                            "Discipline not found with id: " + updateGroupRequest.getDisciplineId()));
+            group.setDiscipline(discipline);
+        }
 
         groupRepository.save(group);
     }
+
     
     public List<StudyGroupDTO> listAllGroups() {
-        return groupRepository.findAll().stream()
-            .map(this::toDTO)
-            .collect(Collectors.toList());
+        return groupRepository.findAllWithDetails().stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
+    
     public List<StudyGroupDTO> listGroupsByUser(String userId) {
-        User user = userRepository.findById(UUID.fromString(userId)).orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
-        return groupRepository.findByUserGroups_User(user).stream()
-            .map(this::toDTO)
-            .collect(Collectors.toList());
+        User user = userRepository.findById(UUID.fromString(userId))
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+        return groupRepository.findByUserGroups_UserWithDetails(user).stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
     public void joinGroup(String groupId, String userId) {
-        User user = userRepository.findById(UUID.fromString(userId)).orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
-        StudyGroup studyGroup = groupRepository.findById(UUID.fromString(groupId)).orElseThrow(() -> new RuntimeException("Group not found with id: " + groupId));
+        User user = userRepository.findById(UUID.fromString(userId))
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+        StudyGroup studyGroup = groupRepository.findById(UUID.fromString(groupId))
+                .orElseThrow(() -> new RuntimeException("Group not found with id: " + groupId));
         UserGroup userGroup = new UserGroup(user, studyGroup, UserGroupType.MEMBER);
         userGroupRepository.save(userGroup);
     }
 
+    
     public StudyGroupDetailDTO getGroupDetailById(String groupId) {
-        StudyGroup studyGroup = groupRepository.findById(UUID.fromString(groupId)).orElseThrow(() -> new RuntimeException("Group not found with id: " + groupId));
+        StudyGroup studyGroup = groupRepository.findGroupDetailById(UUID.fromString(groupId))
+                .orElseThrow(() -> new RuntimeException("Group not found with id: " + groupId));
+
+        
         return new StudyGroupDetailDTO(studyGroup);
     }
 
+    
     private StudyGroupDTO toDTO(StudyGroup group) {
-        // Encontre o dono para popular o DTO
-        UserGroup ownerUserGroup = group.getUserGroups().stream()
-            .filter(ug -> ug.getType() == UserGroupType.OWNER)
-            .findFirst()
-            .orElse(null);
         
+        UserGroup ownerUserGroup = group.getUserGroups().stream()
+                .filter(ug -> ug.getType() == UserGroupType.OWNER)
+                .findFirst()
+                .orElse(null);
+
         UUID ownerId = ownerUserGroup != null ? ownerUserGroup.getUser().getId() : null;
         String ownerName = ownerUserGroup != null ? ownerUserGroup.getUser().getName() : null;
 
         return new StudyGroupDTO(
-            group.getId(),
-            group.getName(),
-            group.getDescription(),
-            group.getMaxMembers(),
-            group.isMonitoring(),
-            group.isActive(),
-            group.getDiscipline().getId(),
-            group.getDiscipline().getName(),
-            group.getDiscipline().getCourse().getName(),
-            group.getDiscipline().getCourse().getUniversity().getName(),
-            ownerId,
-            ownerName,
-            group.getUserGroups().size() // Retorna a contagem de membros
-        );
+                group.getId(),
+                group.getName(),
+                group.getDescription(),
+                group.getMaxMembers(),
+                group.isMonitoring(),
+                group.isActive(),
+                group.getDiscipline().getId(),
+                group.getDiscipline().getName(),
+                group.getDiscipline().getCourse().getName(),
+                group.getDiscipline().getCourse().getUniversity().getName(),
+                ownerId,
+                ownerName,
+                
+                group.getUserGroups().size());
     }
 }

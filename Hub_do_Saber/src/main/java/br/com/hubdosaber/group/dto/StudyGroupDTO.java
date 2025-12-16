@@ -17,11 +17,13 @@ public class StudyGroupDTO {
     private String disciplineName;
     private String courseName;
     private String universityName;
-    private UUID ownerId; // Adicionado para a verificação na lista de grupos
-    private String ownerName; // Adicionado para exibir o nome do dono
-    private int currentMembers; // Adicionado para mostrar a contagem de membros
+    private UUID ownerId;
+    private String ownerName;
+    private int currentMembers;
 
-    public StudyGroupDTO(UUID id, String name, String description, int maxMembers, boolean monitoring, boolean active, UUID disciplineId, String disciplineName, String courseName,String universityName, UUID ownerId, String ownerName, int currentMembers) {
+    public StudyGroupDTO(UUID id, String name, String description, int maxMembers, boolean monitoring, boolean active,
+            UUID disciplineId, String disciplineName, String courseName, String universityName, UUID ownerId,
+            String ownerName, int currentMembers) {
         this.id = id;
         this.name = name;
         this.description = description;

@@ -26,8 +26,9 @@ public class StudyGroupDetailDTO {
     private String courseName;
     private String universityName;
     private List<UserMemberDTO> members = new ArrayList<>();
-    private UUID ownerId; // Adicionado para a verificação de permissão
-    private String ownerName; // Adicionado para exibir o nome do dono
+    private UUID ownerId;
+    private String ownerName;
+
 
     public StudyGroupDetailDTO(StudyGroup group) {
         this.id = group.getId();
@@ -49,15 +50,14 @@ public class StudyGroupDetailDTO {
                     }
                     var user = userGroup.getUser();
                     var courseDTO = user.getCourse() != null
-                        ? new CourseDTO(user.getCourse().getId(), user.getCourse().getName())
-                        : null;
+                            ? new CourseDTO(user.getCourse().getId(), user.getCourse().getName())
+                            : null;
                     return new UserMemberDTO(
-                        user.getId(),
-                        user.getMatriculation(),
-                        user.getName(),
-                        user.getEmail(),
-                        courseDTO
-                    );
+                            user.getId(),
+                            user.getMatriculation(),
+                            user.getName(),
+                            user.getEmail(),
+                            courseDTO);
                 })
                 .collect(Collectors.toList());
     }
