@@ -9,6 +9,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
+import org.hibernate.annotations.Where;
 
 @Entity
 @Table(name = "users")
@@ -16,6 +18,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @Getter
 @Setter
+@Where(clause = "is_active = true")
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -25,6 +28,7 @@ public class User {
     private String matriculation;
 
     @Column(nullable = false)
+    @ToString.Exclude
     private String password;
 
     @Column(nullable = false)
@@ -36,6 +40,9 @@ public class User {
     @ManyToOne
     @JoinColumn(name = "course_id")
     private Course course;
+
+    @Column(nullable = false)
+    private Boolean isActive = true;
 
     @OneToMany(mappedBy = "user", orphanRemoval = true)
     private Set<UserDisciplineInterest> disciplineInterests;

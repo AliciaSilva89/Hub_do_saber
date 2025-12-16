@@ -10,6 +10,5 @@ public class CreateUserRequest {
     private String password;
     private String name;
     private String email;
-    private String courseName; 
-    
+    private String courseName;
 }

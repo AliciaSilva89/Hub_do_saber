@@ -9,7 +9,5 @@ public class UpdateUserRequest {
     private String name;
     private String email;
     private String matriculation;
-    private String address;
-    private String interests;
-    private String bio;
+    
 }
