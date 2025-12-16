@@ -43,7 +43,18 @@ const Profile = () => {
                 email: data.email,
                 registration: data.matriculation,
             });
-            setUserGroups([]);
+
+            // Buscar os grupos do usuário
+            try {
+                const groupsRes = await axios.get("http://localhost:8080/api/group?mygroup=true", {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setUserGroups(groupsRes.data.map((g) => ({ id: g.id, title: g.name, image: '📚' })));
+            } catch (err) {
+                console.error('Erro ao buscar grupos do usuário:', err);
+                setUserGroups([]);
+            }
+
             setLoading(false);
         } catch (err) {
             console.error("Erro ao buscar dados do usuário:", err);

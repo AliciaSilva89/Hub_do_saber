@@ -1,91 +1,79 @@
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Users, Clock, MapPin, User, Calendar } from "lucide-react";
+import { fetchGroupDetail, joinGroup } from "@/services/groupService";
+import { useAuth } from "@/hooks/useAuth"; 
 
 const GroupView = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const [groupData, setGroupData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const { token } = useAuth();
 
-  // Mock data - would come from API based on id
-  const groups = [
-    {
-      id: 1,
-      title: "Grupo de Estudos - Matemática",
-      description: "Estudo aprofundado de cálculo, álgebra e geometria para o ensino médio e superior.",
-      subject: "Matemática",
-      leader: "Prof. Ana Silva",
-      location: "Online - Teams",
-      participants: 15,
-      availableSlots: 10,
-      schedule: "3ª e 5ª - 19hrs",
-      image: "📐"
-    },
-    {
-      id: 2,
-      title: "Grupo de Estudos - Português",
-      description: "Análise e interpretação de textos, gramática e redação para exames e aprimoramento.",
-      subject: "Português",
-      leader: "Prof. Carlos Oliveira",
-      location: "Online - Teams",
-      participants: 15,
-      availableSlots: 8,
-      schedule: "3ª e 5ª - 19hrs",
-      image: "📝"
-    },
-    {
-      id: 3,
-      title: "Grupo de Estudos - Filosofia",
-      description: "Explorando os grandes pensadores da antiguidade e suas contribuições para o conhecimento humano.",
-      subject: "Filosofia",
-      leader: "Prof. Rafael Silva",
-      location: "Online - Teams",
-      participants: 15,
-      availableSlots: 10,
-      schedule: "3ª e 5ª - 19hrs",
-      image: "🤔"
-    },
-    {
-      id: 4,
-      title: "Grupo de Estudos - História",
-      description: "Viagem no tempo: da pré-história à contemporaneidade, desvendando os fatos que moldaram o mundo.",
-      subject: "História",
-      leader: "Prof. Maria Santos",
-      location: "Online - Teams",
-      participants: 12,
-      availableSlots: 7,
-      schedule: "2ª e 4ª - 20hrs",
-      image: "🏛️"
-    },
-    {
-      id: 5,
-      title: "Grupo de Estudos - Física",
-      description: "Desvendando as leis do universo: mecânica, termodinâmica, eletromagnetismo e muito mais.",
-      subject: "Física",
-      leader: "Prof. João Costa",
-      location: "Online - Teams",
-      participants: 18,
-      availableSlots: 12,
-      schedule: "3ª e 6ª - 18hrs",
-      image: "⚛️"
-    },
-    {
-      id: 6,
-      title: "Grupo de Estudos - Química",
-      description: "A estrutura da matéria e suas transformações: explorando reações, elementos e compostos.",
-      subject: "Química",
-      leader: "Prof. Lucia Ferreira",
-      location: "Online - Teams",
-      participants: 10,
-      availableSlots: 5,
-      schedule: "4ª e 5ª - 19hrs",
-      image: "🧪"
+  // Fallback mock (caso a API não responda)
+  const fallback = {
+    title: "Grupo de Estudos",
+    description: "Descrição do grupo.",
+    subject: "Geral",
+    leader: "Organizador",
+    location: "Online",
+    participants: 0,
+    availableSlots: 0,
+    schedule: "",
+    image: "📚",
+  };
+
+  useEffect(() => {
+    const load = async () => {
+      if (!id) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const gd = await fetchGroupDetail(id);
+        setGroupData({
+          id: gd.id,
+          title: gd.name,
+          description: gd.description,
+          subject: gd.disciplineName,
+          leader: gd.ownerName,
+          location: gd.universityName || "Online",
+          participants: gd.currentMembers,
+          availableSlots: gd.maxMembers,
+          schedule: gd.schedule || "",
+          image: "📚",
+        });
+      } catch (e) {
+        // se falhar, manter fallback
+        setGroupData(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [id]);
+
+  const handleJoin = async () => {
+    const tokenLocal = localStorage.getItem("hubdosaber-token");
+    if (!tokenLocal) {
+      navigate("/login");
+      return;
     }
-  ];
 
-  // Encontrar o grupo baseado no ID da URL
-  const groupData = groups.find(group => group.id === parseInt(id || "1")) || groups[0];
+    try {
+      await joinGroup(id!, tokenLocal);
+      alert("Você entrou no grupo com sucesso!");
+      navigate("/profile");
+    } catch (e: any) {
+      alert(e.message || "Erro ao ingressar no grupo");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -132,15 +120,15 @@ const GroupView = () => {
               {/* Left Column - Group Image and Info */}
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-bold mb-2">{groupData.title}</h2>
-                  <p className="text-muted-foreground mb-4">{groupData.description}</p>
+                  <h2 className="text-2xl font-bold mb-2">{(groupData || fallback).title}</h2>
+                  <p className="text-muted-foreground mb-4">{(groupData || fallback).description}</p>
                 </div>
 
                 {/* Group Image */}
                 <div className="w-full max-w-sm mx-auto">
                   <div className="bg-gradient-to-r from-blue-100 via-purple-50 to-orange-50 rounded-lg p-8 flex items-center justify-center">
                     <div className="text-center">
-                      <div className="text-6xl mb-4">{groupData.image}</div>
+                      <div className="text-6xl mb-4">{(groupData || fallback).image}</div>
                       <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
                         <div className="text-2xl">🔍</div>
                       </div>
@@ -156,21 +144,21 @@ const GroupView = () => {
                     <Badge variant="outline" className="p-2">
                       <span className="text-sm">📖</span>
                     </Badge>
-                    <span className="font-medium">{groupData.subject}</span>
+                    <span className="font-medium">{(groupData || fallback).subject}</span>
                   </div>
 
                   <div className="flex items-center gap-3">
                     <Badge variant="outline" className="p-2">
                       <User className="h-4 w-4" />
                     </Badge>
-                    <span className="font-medium">{groupData.leader}</span>
+                    <span className="font-medium">{(groupData || fallback).leader}</span>
                   </div>
 
                   <div className="flex items-center gap-3">
                     <Badge variant="outline" className="p-2">
                       <MapPin className="h-4 w-4" />
                     </Badge>
-                    <span className="font-medium">{groupData.location}</span>
+                    <span className="font-medium">{(groupData || fallback).location}</span>
                   </div>
 
                   <div className="flex items-center gap-3">
@@ -178,7 +166,7 @@ const GroupView = () => {
                       <Users className="h-4 w-4" />
                     </Badge>
                     <span className="font-medium">
-                      {groupData.participants} participantes - {groupData.availableSlots} vagas preenchidas
+                      {(groupData || fallback).participants} participantes - {(groupData || fallback).availableSlots} vagas preenchidas
                     </span>
                   </div>
 
@@ -186,18 +174,16 @@ const GroupView = () => {
                     <Badge variant="outline" className="p-2">
                       <Calendar className="h-4 w-4" />
                     </Badge>
-                    <span className="font-medium">{groupData.schedule}</span>
+                    <span className="font-medium">{(groupData || fallback).schedule}</span>
                   </div>
                 </div>
 
                 <div className="pt-6">
                   <Button 
+                    onClick={handleJoin}
                     className="w-full bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white py-3 text-lg font-medium"
-                    asChild
                   >
-                    <Link to={`/group/${groupData.id}/chat`}>
-                      Participar do Grupo
-                    </Link>
+                    Participar do Grupo
                   </Button>
                 </div>
               </div>
