@@ -1,20 +1,21 @@
-package br.com.hubdosaber.discipline.dto;
+package br.com.hubdosaber.discipline.request;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.UUID;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class DisciplineDTO {
-    private UUID id;
+public class UpdateDisciplineRequest {
     private String name;
     private String description;
     private String code;
     private Integer semester;
     private UUID courseId;
-    private String courseName;
+    private Boolean active;
 }
