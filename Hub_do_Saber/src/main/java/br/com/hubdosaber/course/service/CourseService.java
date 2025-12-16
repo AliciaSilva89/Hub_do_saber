@@ -16,7 +16,8 @@ public class CourseService {
     private final CourseRepository courseRepository;
 
     public List<CourseDTO> findCoursesByUniversityId(UUID universityId) {
-        return courseRepository.findByUniversityId(universityId)
+
+        return courseRepository.findCoursesWithUniversityByUniversityId(universityId)
                 .stream()
                 .map(this::convertToDTO)
                 .toList();
@@ -27,7 +28,6 @@ public class CourseService {
                 course.getId(),
                 course.getName(),
                 course.getUniversity().getId(),
-                course.getUniversity().getName()
-        );
+                course.getUniversity().getName());
     }
 }
