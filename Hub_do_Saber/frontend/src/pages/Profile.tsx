@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +23,7 @@ const Profile = () => {
     const API_URL = "http://localhost:8080/api/users/me";
 
     // Mantenha a função de busca separada para ser reutilizada
-    const fetchUserProfile = async () => {
+    const fetchUserProfile = useCallback(async () => {
         const token = localStorage.getItem("hubdosaber-token");
         if (!token) {
             navigate("/login");
@@ -61,12 +61,12 @@ const Profile = () => {
             setError("Erro ao carregar o perfil. Tente novamente mais tarde.");
             setLoading(false);
         }
-    };
+    }, [navigate, API_URL]);
 
     // Efeito para carregar os dados do perfil quando o componente monta
     useEffect(() => {
         fetchUserProfile();
-    }, [navigate, API_URL]);
+    }, [fetchUserProfile]);
 
     const handleSave = async () => {
         const token = localStorage.getItem("hubdosaber-token");

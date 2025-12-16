@@ -6,27 +6,40 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Users, Clock, MapPin, User, Calendar } from "lucide-react";
 import { fetchGroupDetail, joinGroup } from "@/services/groupService";
-import { useAuth } from "@/hooks/useAuth"; 
+import type { GroupDetail } from "@/services/groupService"; 
 
 const GroupView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [groupData, setGroupData] = useState<any>(null);
+  interface DisplayGroupDetail {
+    id: string;
+    title: string;
+    description: string;
+    subject: string;
+    leader: string;
+    location: string;
+    participants: number;
+    maxMembers: number;
+    schedule?: string;
+    image?: string;
+  }
+
+  const [groupData, setGroupData] = useState<DisplayGroupDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const { token } = useAuth();
 
   // Fallback mock (caso a API não responda)
-  const fallback = {
+  const fallback: DisplayGroupDetail = {
+    id: "",
     title: "Grupo de Estudos",
     description: "Descrição do grupo.",
     subject: "Geral",
     leader: "Organizador",
     location: "Online",
     participants: 0,
-    availableSlots: 0,
+    maxMembers: 0,
     schedule: "",
     image: "📚",
-  };
+  }; 
 
   useEffect(() => {
     const load = async () => {
@@ -35,7 +48,8 @@ const GroupView = () => {
         return;
       }
       try {
-        const gd = await fetchGroupDetail(id);
+        const gd: GroupDetail = await fetchGroupDetail(id);
+        const participantsCount = Array.isArray(gd.members) ? gd.members.length : 0;
         setGroupData({
           id: gd.id,
           title: gd.name,
@@ -43,13 +57,14 @@ const GroupView = () => {
           subject: gd.disciplineName,
           leader: gd.ownerName,
           location: gd.universityName || "Online",
-          participants: gd.currentMembers,
-          availableSlots: gd.maxMembers,
+          participants: participantsCount,
+          maxMembers: gd.maxMembers,
           schedule: gd.schedule || "",
           image: "📚",
         });
-      } catch (e) {
+      } catch (e: unknown) {
         // se falhar, manter fallback
+        console.error(e);
         setGroupData(null);
       } finally {
         setLoading(false);
@@ -70,8 +85,9 @@ const GroupView = () => {
       await joinGroup(id!, tokenLocal);
       alert("Você entrou no grupo com sucesso!");
       navigate("/profile");
-    } catch (e: any) {
-      alert(e.message || "Erro ao ingressar no grupo");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      alert(message || "Erro ao ingressar no grupo");
     }
   };
 
@@ -166,7 +182,7 @@ const GroupView = () => {
                       <Users className="h-4 w-4" />
                     </Badge>
                     <span className="font-medium">
-                      {(groupData || fallback).participants} participantes - {(groupData || fallback).availableSlots} vagas preenchidas
+                      {(groupData || fallback).participants} participantes - {Math.max(((groupData || fallback).maxMembers ?? 0) - ((groupData || fallback).participants ?? 0), 0)} vagas restantes
                     </span>
                   </div>
 

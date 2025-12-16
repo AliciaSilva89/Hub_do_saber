@@ -13,6 +13,7 @@ import br.com.hubdosaber.group.request.UpdateGroupRequest;
 import br.com.hubdosaber.user.model.User;
 import br.com.hubdosaber.user.repository.UserRepository;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
@@ -27,13 +28,16 @@ public class GroupService {
     private final DisciplineRepository disciplineRepository;
 
     public StudyGroup createGroup(CreateGroupRequest createGroupRequest, String userId) {
+        Objects.requireNonNull(userId, "User id is required");
         User user = userRepository.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
 
-    
-        var discipline = disciplineRepository.findById(createGroupRequest.getDisciplineId())
+        // Valida e garante que o disciplineId não seja nulo antes de chamar findById
+        UUID disciplineId = Objects.requireNonNull(createGroupRequest.getDisciplineId(), "Discipline id is required");
+
+        var discipline = disciplineRepository.findById(disciplineId)
                 .orElseThrow(() -> new RuntimeException(
-                        "Discipline not found with id: " + createGroupRequest.getDisciplineId()));
+                        "Discipline not found with id: " + disciplineId));
 
         StudyGroup studyGroup = new StudyGroup();
         studyGroup.setName(createGroupRequest.getName());
@@ -51,13 +55,15 @@ public class GroupService {
 
     
     public void updateGroup(String groupId, UpdateGroupRequest updateGroupRequest, String userId) {
-        
+        Objects.requireNonNull(groupId, "Group id is required");
+        Objects.requireNonNull(userId, "User id is required");
+
         StudyGroup group = groupRepository.findGroupDetailById(UUID.fromString(groupId))
                 .orElseThrow(() -> new RuntimeException("Group not found with id: " + groupId));
 
         
         boolean isOwner = group.getUserGroups().stream()
-                .anyMatch(ug -> ug.getType() == UserGroupType.OWNER && ug.getUser().getId().toString().equals(userId));
+                .anyMatch(ug -> ug.getType() == UserGroupType.OWNER && ug.getUser() != null && ug.getUser().getId() != null && ug.getUser().getId().toString().equals(userId));
 
         if (!isOwner) {
             throw new RuntimeException("You are not the owner of this group and cannot edit it.");
@@ -80,12 +86,14 @@ public class GroupService {
             group.setActive(updateGroupRequest.getActive());
         }
 
-        if (updateGroupRequest.getDisciplineId() != null
-                && !updateGroupRequest.getDisciplineId().equals(group.getDiscipline().getId())) {
-            var discipline = disciplineRepository.findById(updateGroupRequest.getDisciplineId())
-                    .orElseThrow(() -> new RuntimeException(
-                            "Discipline not found with id: " + updateGroupRequest.getDisciplineId()));
-            group.setDiscipline(discipline);
+        if (updateGroupRequest.getDisciplineId() != null) {
+            var currentDiscipline = Objects.requireNonNull(group.getDiscipline(), "Discipline is required");
+            if (!updateGroupRequest.getDisciplineId().equals(currentDiscipline.getId())) {
+                var discipline = disciplineRepository.findById(updateGroupRequest.getDisciplineId())
+                        .orElseThrow(() -> new RuntimeException(
+                                "Discipline not found with id: " + updateGroupRequest.getDisciplineId()));
+                group.setDiscipline(discipline);
+            }
         }
 
         groupRepository.save(group);
@@ -100,6 +108,7 @@ public class GroupService {
 
     
     public List<StudyGroupDTO> listGroupsByUser(String userId) {
+        Objects.requireNonNull(userId, "User id is required");
         User user = userRepository.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
         return groupRepository.findByUserGroups_UserWithDetails(user).stream()
@@ -108,6 +117,8 @@ public class GroupService {
     }
 
     public void joinGroup(String groupId, String userId) {
+        Objects.requireNonNull(userId, "User id is required");
+        Objects.requireNonNull(groupId, "Group id is required");
         User user = userRepository.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
         StudyGroup studyGroup = groupRepository.findById(UUID.fromString(groupId))
@@ -118,6 +129,7 @@ public class GroupService {
 
     
     public StudyGroupDetailDTO getGroupDetailById(String groupId) {
+        Objects.requireNonNull(groupId, "Group id is required");
         StudyGroup studyGroup = groupRepository.findGroupDetailById(UUID.fromString(groupId))
                 .orElseThrow(() -> new RuntimeException("Group not found with id: " + groupId));
 
@@ -133,8 +145,17 @@ public class GroupService {
                 .findFirst()
                 .orElse(null);
 
-        UUID ownerId = ownerUserGroup != null ? ownerUserGroup.getUser().getId() : null;
-        String ownerName = ownerUserGroup != null ? ownerUserGroup.getUser().getName() : null;
+        UUID ownerId = null;
+        String ownerName = null;
+        if (ownerUserGroup != null) {
+            ownerId = ownerUserGroup.getUser().getId();
+            ownerName = ownerUserGroup.getUser().getName();
+        }
+
+        // Garantir que discipline, course e university não são nulos para evitar problemas de null-safety
+        var discipline = java.util.Objects.requireNonNull(group.getDiscipline(), "Discipline is required");
+        var course = java.util.Objects.requireNonNull(discipline.getCourse(), "Course is required for discipline");
+        var university = java.util.Objects.requireNonNull(course.getUniversity(), "University is required for course");
 
         return new StudyGroupDTO(
                 group.getId(),
@@ -143,10 +164,10 @@ public class GroupService {
                 group.getMaxMembers(),
                 group.isMonitoring(),
                 group.isActive(),
-                group.getDiscipline().getId(),
-                group.getDiscipline().getName(),
-                group.getDiscipline().getCourse().getName(),
-                group.getDiscipline().getCourse().getUniversity().getName(),
+                discipline.getId(),
+                discipline.getName(),
+                course.getName(),
+                university.getName(),
                 ownerId,
                 ownerName,
                 

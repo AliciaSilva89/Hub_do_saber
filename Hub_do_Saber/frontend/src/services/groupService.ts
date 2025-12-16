@@ -1,5 +1,13 @@
 import axios from "axios";
 
+export interface UserMember {
+  id: string;
+  matriculation?: string;
+  name: string;
+  email?: string;
+  course?: { id: string; name: string } | null;
+}
+
 export interface GroupDetail {
   id: string;
   name: string;
@@ -11,13 +19,13 @@ export interface GroupDetail {
   courseName: string;
   universityName?: string;
   ownerName: string;
-  members: any[]; // Simplificando por enquanto
+  members: UserMember[];
   schedule?: string;
   location?: string;
 }
 
 // Usa variável de ambiente Vite se definida, caso contrário usa localhost
-const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:8080/api/group";
+const API_BASE_URL = ((import.meta as unknown as { env?: { VITE_API_BASE_URL?: string } }).env?.VITE_API_BASE_URL) || "http://localhost:8080/api/group";
 
 export async function fetchGroupDetail(groupId: string): Promise<GroupDetail> {
   try {

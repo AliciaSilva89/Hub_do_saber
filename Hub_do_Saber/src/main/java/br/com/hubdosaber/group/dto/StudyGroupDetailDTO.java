@@ -37,10 +37,16 @@ public class StudyGroupDetailDTO {
         this.maxMembers = group.getMaxMembers();
         this.monitoring = group.isMonitoring();
         this.active = group.isActive();
-        this.disciplineId = group.getDiscipline().getId();
-        this.disciplineName = group.getDiscipline().getName();
-        this.courseName = group.getDiscipline().getCourse().getName();
-        this.universityName = group.getDiscipline().getCourse().getUniversity().getName();
+
+        // Garantir que disciplina/curso/university não são nulos
+        var discipline = java.util.Objects.requireNonNull(group.getDiscipline(), "Discipline is required");
+        var course = java.util.Objects.requireNonNull(discipline.getCourse(), "Course is required for discipline");
+        var university = java.util.Objects.requireNonNull(course.getUniversity(), "University is required for course");
+
+        this.disciplineId = discipline.getId();
+        this.disciplineName = discipline.getName();
+        this.courseName = course.getName();
+        this.universityName = university.getName();
 
         this.members = group.getUserGroups().stream()
                 .map(userGroup -> {
