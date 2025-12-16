@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="RemoteTargetsManager">
@@ -20,4 +21,28 @@
       </target>
     </targets>
   </component>
+=======
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="RemoteTargetsManager">
+    <targets>
+      <target name="WSL" type="wsl" uuid="0c951eee-38d2-4174-9d52-af16cdef333b">
+        <config>
+          <option name="distributionMsId" value="archlinux" />
+        </config>
+        <ContributedStateBase type="JavaLanguageRuntime">
+          <config>
+            <option name="homePath" value="$PROJECT_DIR$/../../../../../usr/lib/jvm/java-21-openjdk" />
+          </config>
+        </ContributedStateBase>
+        <ContributedStateBase type="MavenRuntime">
+          <config>
+            <option name="homePath" value="C:\Users\mathe\AppData\Local\Programs\IntelliJ IDEA Ultimate\plugins\maven\lib\maven3" />
+            <option name="versionString" value="3.9.9" />
+          </config>
+        </ContributedStateBase>
+      </target>
+    </targets>
+  </component>
+>>>>>>> e93fd10d7988990c61d0c6558e4609bd92c1d06b
 </project>

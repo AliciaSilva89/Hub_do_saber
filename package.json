@@ -3,6 +3,7 @@
     "@types/jwt-decode": "^2.2.1",
     "axios": "^1.12.2",
     "jwt-decode": "^4.0.0"
+<<<<<<< HEAD
   },
   "devDependencies": {
     "nodemon": "^3.1.11"
@@ -17,4 +18,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC"
+=======
+  }
+>>>>>>> e93fd10d7988990c61d0c6558e4609bd92c1d06b
 }

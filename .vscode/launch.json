@@ -5,6 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
+<<<<<<< HEAD
             "name": "Launch Chrome",
             "request": "launch",
             "type": "chrome",
@@ -12,6 +13,8 @@
             "webRoot": "${workspaceFolder}"
         },
         {
+=======
+>>>>>>> e93fd10d7988990c61d0c6558e4609bd92c1d06b
             "type": "java",
             "name": "Current File",
             "request": "launch",

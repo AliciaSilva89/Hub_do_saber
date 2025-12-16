@@ -9,3 +9,4 @@ import java.util.UUID;
 public interface UserDisciplineInterestRepository extends JpaRepository<UserDisciplineInterest, UUID> {
     List<UserDisciplineInterest> findByUser(User user);
 }
+

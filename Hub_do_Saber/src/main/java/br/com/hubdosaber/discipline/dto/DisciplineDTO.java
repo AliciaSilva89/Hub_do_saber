@@ -18,3 +18,4 @@ public class DisciplineDTO {
     private UUID courseId;
     private String courseName;
 }
+

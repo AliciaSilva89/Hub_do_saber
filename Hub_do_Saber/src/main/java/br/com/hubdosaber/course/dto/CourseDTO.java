@@ -15,3 +15,4 @@ public class CourseDTO {
     private UUID universityId;
     private String universityName;
 }
+
