@@ -5,12 +5,11 @@ import br.com.hubdosaber.user.request.CreateUserRequest;
 import br.com.hubdosaber.user.request.UpdateUserRequest;
 import br.com.hubdosaber.user.service.UserService;
 import lombok.AllArgsConstructor;
-import org.springframework.data.domain.Page; 
-import org.springframework.data.domain.Pageable; 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import br.com.hubdosaber.config.GlobalExceptionHandler;
-import org.springframework.security.access.prepost.PreAuthorize; 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -34,7 +33,6 @@ public class UserController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
-
     public ResponseEntity<Page<UserDTO>> getAllUsers(Pageable pageable) {
         Page<UserDTO> users = userService.findPagedUsersDTO(pageable);
         return ResponseEntity.ok(users);
@@ -54,7 +52,6 @@ public class UserController {
         return user.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-
 
     @PutMapping("/me")
     public ResponseEntity<UserDTO> updateCurrentUser(@RequestBody UpdateUserRequest request,

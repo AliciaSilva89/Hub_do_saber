@@ -18,7 +18,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Collections;
 import java.util.stream.Collectors;
+
+import br.com.hubdosaber.config.AppUserDetails;
 
 @Service
 @AllArgsConstructor
@@ -77,7 +80,7 @@ public class UserService {
         }
 
         if (request.getMatriculation() != null && !request.getMatriculation().equals(user.getMatriculation())) {
-            // Aqui deveria ter a chamada para findByMatriculation, se implementado
+        
             user.setMatriculation(request.getMatriculation());
         }
 
@@ -109,8 +112,23 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public List<UserDTO> findAllUsersDTO() {
+    
         return userRepository.findAll().stream()
                 .map(userMapper::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public AppUserDetails loadAppUserDetailsById(UUID id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + id));
+
+        return new AppUserDetails(
+                user.getId(),
+                user.getEmail(),
+                user.getPassword(),
+                Collections.emptyList(),
+                user.getIsActive() != null ? user.getIsActive() : true
+        );
     }
 }
