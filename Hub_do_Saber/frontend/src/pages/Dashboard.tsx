@@ -17,7 +17,7 @@ const Dashboard = () => {
 
   const groups = [
     {
-      id: 1,
+      id: "8a1b2c3d-4e5f-6789-0abc-def123456789",
       title: "Grupo de Estudos - Matemática",
       description: "Estudo aprofundado de cálculo, álgebra e geometria para o ensino médio e superior.",
       participants: 15,
@@ -26,7 +26,7 @@ const Dashboard = () => {
       subject: "Matemática"
     },
     {
-      id: 2,
+      id: "a7b6c5d4-e3f2-1a0b-9c8d-7e6f5a4b3c2d",
       title: "Grupo de Estudos - Português",
       description: "Análise e interpretação de textos, gramática e redação para exames e aprimoramento.",
       participants: 15,
@@ -35,7 +35,7 @@ const Dashboard = () => {
       subject: "Português"
     },
     {
-      id: 3,
+      id: "11111111-2222-3333-4444-555555555555",
       title: "Grupo de Estudos - Filosofia",
       description: "Explorando os grandes pensadores da antiguidade e suas contribuições para o conhecimento humano.",
       participants: 15,
@@ -44,7 +44,7 @@ const Dashboard = () => {
       subject: "Filosofia"
     },
     {
-      id: 4,
+      id: "66666666-7777-8888-9999-000000000000",
       title: "Grupo de Estudos - História",
       description: "Viagem no tempo: da pré-história à contemporaneidade, desvendando os fatos que moldaram o mundo.",
       participants: 12,
@@ -53,7 +53,7 @@ const Dashboard = () => {
       subject: "História"
     },
     {
-      id: 5,
+      id: "123e4567-e89b-12d3-a456-426614174000",
       title: "Grupo de Estudos - Física",
       description: "Desvendando as leis do universo: mecânica, termodinâmica, eletromagnetismo e muito mais.",
       participants: 18,
@@ -62,7 +62,7 @@ const Dashboard = () => {
       subject: "Física"
     },
     {
-      id: 6,
+      id: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
       title: "Grupo de Estudos - Química",
       description: "A estrutura da matéria e suas transformações: explorando reações, elementos e compostos.",
       participants: 10,

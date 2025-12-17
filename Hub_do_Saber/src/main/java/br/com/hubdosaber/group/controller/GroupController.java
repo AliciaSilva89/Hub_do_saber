@@ -20,17 +20,23 @@ public class GroupController {
     private final GroupService groupService;
 
     @PostMapping
-    public ResponseEntity<UUID> createGroup(@RequestBody CreateGroupRequest createGroupRequest, @AuthenticationPrincipal Jwt principal) {
-        String userId = principal.getSubject();
-        StudyGroup savedStudyGroup = groupService.createGroup(createGroupRequest, userId);
-        return ResponseEntity.ok(savedStudyGroup.getId());
+    public ResponseEntity<UUID> createGroup(@RequestBody CreateGroupRequest request,
+            @AuthenticationPrincipal Jwt principal) {
+        StudyGroup group = groupService.createGroup(request, principal.getSubject());
+        return ResponseEntity.ok(group.getId()); 
     }
 
     @PostMapping("/join")
     public ResponseEntity<?> joinGroup(@RequestParam("groupId") String groupId, @AuthenticationPrincipal Jwt principal) {
-        String userId = principal.getSubject();
-        groupService.joinGroup(groupId, userId);
-        return ResponseEntity.ok().build();
+        try {
+            String userId = principal.getSubject();
+            groupService.joinGroup(groupId, userId);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(404).body(e.getMessage());
+        }
     }
 
     @GetMapping
@@ -46,7 +52,13 @@ public class GroupController {
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getGroupById(@PathVariable("id") String groupId){
-        return ResponseEntity.ok(groupService.getGroupDetailById(groupId));
+        try {
+            return ResponseEntity.ok(groupService.getGroupDetailById(groupId));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(404).body(e.getMessage());
+        }
     }
     
     // Novo endpoint para atualizar um grupo

@@ -1,60 +1,110 @@
-import axios from "axios";
+// services/groupService.ts
+import axios, { AxiosError } from "axios";
 
-export interface UserMember {
-  id: string;
-  matriculation?: string;
-  name: string;
-  email?: string;
-  course?: { id: string; name: string } | null;
-}
+const BFF_URL = import.meta.env.VITE_BFF_URL || "http://localhost:3000";
 
 export interface GroupDetail {
   id: string;
   name: string;
   description: string;
+  ownerName: string; // BFF envia ownerName
   maxMembers: number;
-  monitoring?: boolean;
-  active?: boolean;
-  disciplineName: string;
-  courseName: string;
-  universityName?: string;
-  ownerName: string;
-  members: UserMember[];
-  schedule?: string;
-  location?: string;
+  members: any[]; // BFF envia members como array
+  disciplineName: string; // BFF envia disciplineName
+  universityName: string; // BFF envia universityName
+  schedule: string; // BFF envia schedule
 }
 
-// Usa variável de ambiente Vite se definida, caso contrário usa localhost
-const API_BASE_URL = ((import.meta as unknown as { env?: { VITE_API_BASE_URL?: string } }).env?.VITE_API_BASE_URL) || "http://localhost:8080/api/group";
+interface ErrorResponse {
+  message: string;
+}
 
+/**
+ * Busca os detalhes de um grupo específico
+ */
 export async function fetchGroupDetail(groupId: string): Promise<GroupDetail> {
   try {
-    const response = await axios.get<GroupDetail>(`${API_BASE_URL}/${groupId}`);
-    return response.data;
-  } catch (error) {
-    console.error("Erro ao buscar detalhes do grupo:", error);
-    throw new Error("Não foi possível carregar os detalhes do grupo.");
-  }
-}
+    // Pega o token do localStorage (SEM o prefixo Bearer)
+    const token = localStorage.getItem("hubdosaber-token");
 
-export async function joinGroup(groupId: string, token: string): Promise<void> {
-  const url = `${API_BASE_URL}/join?groupId=${groupId}`;
+    if (!token) {
+      throw new Error("Token não encontrado. Faça login novamente.");
+    }
 
-  try {
-    await axios.post(
-      url,
-      {},
+    // Envia para o BFF com o prefixo Bearer
+    const response = await axios.get<GroupDetail>(
+      `${BFF_URL}/bff/group/${groupId}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       }
     );
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
-      const data = error.response.data as { message?: string };
-      throw new Error(data.message || `Erro ao ingressar: Status ${error.response.status}`);
+
+    return response.data;
+  } catch (error: unknown) {
+    console.error("Erro ao buscar detalhes do grupo:", error);
+
+    if (axios.isAxiosError(error)) {
+      const axiosError = error as AxiosError<ErrorResponse>;
+
+      if (axiosError.response?.status === 401) {
+        // Token inválido ou expirado
+        localStorage.removeItem("hubdosaber-token");
+        throw new Error("Sessão expirada. Faça login novamente.");
+      }
     }
-    throw new Error("Erro de rede.");
+
+    throw new Error("Não foi possível carregar os detalhes do grupo.");
+  }
+}
+
+/**
+ * Entra em um grupo específico
+ */
+export async function joinGroup(
+  groupId: string,
+  token?: string
+): Promise<void> {
+  try {
+    // Se não recebeu token como parâmetro, pega do localStorage
+    const authToken = token || localStorage.getItem("hubdosaber-token");
+
+    if (!authToken) {
+      throw new Error("Token não encontrado. Faça login novamente.");
+    }
+
+    // Remove o prefixo Bearer se já existir (para evitar duplicação)
+    const cleanToken = authToken.replace(/^Bearer\s+/i, "");
+
+    // Envia para o BFF com o prefixo Bearer
+    await axios.post(
+      `${BFF_URL}/bff/group/${groupId}/join`,
+      {}, // body vazio
+      {
+        headers: {
+          Authorization: `Bearer ${cleanToken}`,
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Erro ao entrar no grupo:", error);
+
+    if (axios.isAxiosError(error)) {
+      const axiosError = error as AxiosError<ErrorResponse>;
+
+      if (axiosError.response?.status === 401) {
+        localStorage.removeItem("hubdosaber-token");
+        throw new Error("Sessão expirada. Faça login novamente.");
+      }
+
+      if (axiosError.response?.status === 400) {
+        throw new Error(
+          axiosError.response.data?.message || "Erro ao processar requisição."
+        );
+      }
+    }
+
+    throw new Error("Não foi possível entrar no grupo.");
   }
 }

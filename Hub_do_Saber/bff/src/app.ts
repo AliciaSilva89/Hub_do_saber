@@ -17,9 +17,18 @@ app.use(express.json());
 app.use(cookieParser());
 
 // CORS (ajuste conforme seu front)
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:8081"; 
+const DEFAULT_ALLOWED = [FRONTEND_URL, "http://localhost:8080"];
+console.log("🔒 CORS allowed origins:", DEFAULT_ALLOWED.join(", "));
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: (origin, callback) => {
+      // allow requests with no origin like mobile apps or curl
+      if (!origin) return callback(null, true);
+      if (DEFAULT_ALLOWED.includes(origin)) return callback(null, true);
+      return callback(new Error("CORS not allowed by BFF"));
+    },
     credentials: true,
   })
 );

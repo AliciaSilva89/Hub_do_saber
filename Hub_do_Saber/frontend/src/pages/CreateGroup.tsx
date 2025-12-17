@@ -5,34 +5,55 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Upload } from "lucide-react";
+import axios from "axios";
 
 const CreateGroup = () => {
   const navigate = useNavigate();
   const [groupName, setGroupName] = useState("");
   const [description, setDescription] = useState("");
-  const [subject, setSubject] = useState("");
+  const [subject, setSubject] = useState(""); // Este estado agora guardará o UUID da disciplina
   const [participants, setParticipants] = useState("5-10");
   const [hasMonitoring, setHasMonitoring] = useState("yes");
   const [coverImage, setCoverImage] = useState<File | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically send the data to your backend
-    console.log({
-      groupName,
-      description,
-      subject,
-      participants,
-      hasMonitoring,
-      coverImage
-    });
-    // Navigate back to dashboard after creation
-    navigate('/dashboard');
-  };
+    const tokenLocal = localStorage.getItem("hubdosaber-token");
+    if (!tokenLocal) return navigate("/login");
 
+    try {
+      const tokenFormatado = `Bearer ${tokenLocal}`;
+      
+      const payload = {
+        groupName,
+        description,
+        participants,
+        hasMonitoring,
+        disciplineId: subject 
+      };
+
+      const response = await axios.post("http://localhost:3000/bff/group", payload, {
+        headers: { Authorization: tokenFormatado }
+      });
+
+      // O Java retorna o UUID. Aqui garantimos que pegamos o valor correto.
+      const newGroupId = typeof response.data === 'object' ? response.data.id : response.data;
+
+      if (newGroupId) {
+        alert("Grupo criado com sucesso!");
+        // ✅ USANDO CRASES para a URL funcionar com a variável
+        navigate(`/group/${newGroupId}`); 
+      } else {
+        throw new Error("ID não recebido");
+      }
+    } catch (error: any) {
+      console.error("Erro ao criar:", error.response?.data || error.message);
+      alert("Erro ao criar o grupo. Verifique se a matéria foi selecionada.");
+    }
+};
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -55,18 +76,10 @@ const CreateGroup = () => {
           </div>
           
           <nav className="flex items-center gap-6">
-            <Link to="/dashboard" className="text-muted-foreground hover:text-primary">
-              Grupos
-            </Link>
-            <Link to="/profile" className="text-muted-foreground hover:text-primary">
-              Perfil
-            </Link>
-            <Link to="/saiba" className="text-muted-foreground hover:text-primary">
-              Saiba
-            </Link>
-            <Button className="bg-black hover:bg-black/90 text-white">
-              Criar Grupo
-            </Button>
+            <Link to="/dashboard" className="text-muted-foreground hover:text-primary">Grupos</Link>
+            <Link to="/profile" className="text-muted-foreground hover:text-primary">Perfil</Link>
+            <Link to="/saiba" className="text-muted-foreground hover:text-primary">Saiba</Link>
+            <Button className="bg-black hover:bg-black/90 text-white">Criar Grupo</Button>
           </nav>
         </div>
       </header>
@@ -84,12 +97,10 @@ const CreateGroup = () => {
                 {/* Left Column */}
                 <div className="space-y-6">
                   <div>
-                    <Label htmlFor="groupName" className="text-sm font-medium text-blue-600">
-                      Nome do Grupo
-                    </Label>
+                    <Label htmlFor="groupName" className="text-sm font-medium text-blue-600">Nome do Grupo</Label>
                     <Input
                       id="groupName"
-                      placeholder="Ex: Grupo de Português"
+                      placeholder="Ex: Grupo de Cálculo"
                       value={groupName}
                       onChange={(e) => setGroupName(e.target.value)}
                       className="mt-2"
@@ -98,9 +109,7 @@ const CreateGroup = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="description" className="text-sm font-medium text-blue-600">
-                      Descrição
-                    </Label>
+                    <Label htmlFor="description" className="text-sm font-medium text-blue-600">Descrição</Label>
                     <Textarea
                       id="description"
                       placeholder="Fale sobre o grupo..."
@@ -112,23 +121,19 @@ const CreateGroup = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="subject" className="text-sm font-medium text-blue-600">
-                      Matéria
-                    </Label>
+                    <Label htmlFor="subject" className="text-sm font-medium text-blue-600">Matéria</Label>
                     <Select value={subject} onValueChange={setSubject} required>
                       <SelectTrigger className="mt-2">
-                        <SelectValue placeholder="Ex: Português" />
+                        <SelectValue placeholder="Selecione a matéria" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="portugues">Português</SelectItem>
-                        <SelectItem value="matematica">Matemática</SelectItem>
-                        <SelectItem value="historia">História</SelectItem>
-                        <SelectItem value="geografia">Geografia</SelectItem>
-                        <SelectItem value="ingles">Inglês</SelectItem>
-                        <SelectItem value="ciencias">Ciências</SelectItem>
-                        <SelectItem value="quimica">Química</SelectItem>
-                        <SelectItem value="fisica">Física</SelectItem>
-                        <SelectItem value="filosofia">Filosofia</SelectItem>
+                        {/* UUIDs REAIS do seu banco de dados */}
+                        <SelectItem value="d1e2f3a4-b5c6-7890-1234-567890abcdef">Programação para Internet</SelectItem>
+                        <SelectItem value="e2f3a4b5-c6d7-8901-2345-67890abcdef1">Estrutura de Dados 1</SelectItem>
+                        <SelectItem value="a4b5c6d7-e8f9-0123-4567-890abcdef123">Cálculo 1</SelectItem>
+                        <SelectItem value="e8f9a0b1-c2d3-4567-8901-bcdef1234567">Banco de Dados 1</SelectItem>
+                        <SelectItem value="c6d7e8f9-a0b1-2345-6789-0abcdef12345">Projetos de Software 1</SelectItem>
+                        <SelectItem value="d7e8f9a0-b1c2-3456-7890-abcdef123456">Projetos de Software 2</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -138,11 +143,7 @@ const CreateGroup = () => {
                 <div className="space-y-6">
                   <div>
                     <Label className="text-sm font-medium">Número de Participantes</Label>
-                    <RadioGroup 
-                      value={participants} 
-                      onValueChange={setParticipants}
-                      className="mt-3 space-y-2"
-                    >
+                    <RadioGroup value={participants} onValueChange={setParticipants} className="mt-3 space-y-2">
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="5-10" id="5-10" />
                         <Label htmlFor="5-10" className="text-sm">5-10</Label>
@@ -160,11 +161,7 @@ const CreateGroup = () => {
 
                   <div>
                     <Label className="text-sm font-medium">Monitoria</Label>
-                    <RadioGroup 
-                      value={hasMonitoring} 
-                      onValueChange={setHasMonitoring}
-                      className="mt-3 space-y-2"
-                    >
+                    <RadioGroup value={hasMonitoring} onValueChange={setHasMonitoring} className="mt-3 space-y-2">
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="yes" id="yes" />
                         <Label htmlFor="yes" className="text-sm">Sim</Label>

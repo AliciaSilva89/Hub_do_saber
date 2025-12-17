@@ -12,6 +12,7 @@ import br.com.hubdosaber.group.request.CreateGroupRequest;
 import br.com.hubdosaber.group.request.UpdateGroupRequest;
 import br.com.hubdosaber.user.model.User;
 import br.com.hubdosaber.user.repository.UserRepository;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -27,18 +28,19 @@ public class GroupService {
     private final UserRepository userRepository;
     private final DisciplineRepository disciplineRepository;
 
+    @Transactional 
     public StudyGroup createGroup(CreateGroupRequest createGroupRequest, String userId) {
         Objects.requireNonNull(userId, "User id is required");
+
         User user = userRepository.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
 
-        // Valida e garante que o disciplineId não seja nulo antes de chamar findById
         UUID disciplineId = Objects.requireNonNull(createGroupRequest.getDisciplineId(), "Discipline id is required");
 
         var discipline = disciplineRepository.findById(disciplineId)
-                .orElseThrow(() -> new RuntimeException(
-                        "Discipline not found with id: " + disciplineId));
+                .orElseThrow(() -> new RuntimeException("Discipline not found with id: " + disciplineId));
 
+        // Criação da entidade
         StudyGroup studyGroup = new StudyGroup();
         studyGroup.setName(createGroupRequest.getName());
         studyGroup.setDescription(createGroupRequest.getDescription());
@@ -47,11 +49,18 @@ public class GroupService {
         studyGroup.setActive(true);
         studyGroup.setDiscipline(discipline);
 
+        // 1. Salva o grupo primeiro para gerar o ID
         StudyGroup savedStudyGroup = groupRepository.save(studyGroup);
+
+        // 2. Cria o vínculo do criador como DONO (OWNER)
         UserGroup userGroup = new UserGroup(user, savedStudyGroup, UserGroupType.OWNER);
         userGroupRepository.save(userGroup);
+
+        // 3. Retorna o grupo salvo (contendo o ID gerado)
         return savedStudyGroup;
     }
+
+
 
     
     public void updateGroup(String groupId, UpdateGroupRequest updateGroupRequest, String userId) {
