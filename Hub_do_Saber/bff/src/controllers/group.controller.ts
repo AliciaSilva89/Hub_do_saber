@@ -1,4 +1,3 @@
-// controllers/group.controller.ts (BFF)
 import { Request, Response } from "express";
 import * as groupService from "../services/group.service";
 import { AxiosError } from "axios";
@@ -12,7 +11,7 @@ export async function getGroupDetail(
   res: Response
 ): Promise<void> {
   try {
-    const token = req.headers.authorization!; // Garantido pelo middleware
+    const token = req.headers.authorization!;
     const groupId = req.params.id;
 
     console.log(`📥 Recebendo requisição para grupo ${groupId}`);
@@ -39,9 +38,22 @@ export async function getGroupDetail(
   }
 }
 
+export async function getMyGroups(req: Request, res: Response): Promise<void> {
+  try {
+    const token = req.headers.authorization!;
+    console.log("📥 Recebendo requisição para meus grupos");
+
+    const groups = await groupService.fetchMyGroups(token);
+    res.json(groups);
+  } catch (err) {
+    console.error("❌ Erro no controller getMyGroups:", err);
+    res.status(500).json({ message: "Erro ao buscar seus grupos" });
+  }
+}
+
 export async function joinGroup(req: Request, res: Response): Promise<void> {
   try {
-    const token = req.headers.authorization!; // Garantido pelo middleware
+    const token = req.headers.authorization!;
     const groupId = req.params.id;
 
     console.log(`📥 Recebendo requisição para entrar no grupo ${groupId}`);
@@ -68,12 +80,19 @@ export async function joinGroup(req: Request, res: Response): Promise<void> {
   }
 }
 
-export async function createGroup(req: Request, res: Response) {
+export async function createGroup(req: Request, res: Response): Promise<void> {
   try {
     const token = req.headers.authorization!;
+    console.log("📥 Criando grupo:", req.body);
+
     const groupId = await groupService.createGroup(req.body, token);
     res.status(201).json({ id: groupId });
-  } catch (e: any) {
-    res.status(400).json({ message: e.message });
+  } catch (err: any) {
+    console.error("❌ Erro no controller createGroup:", err);
+
+    let status = 400;
+    let message = err.message || "Erro ao criar grupo";
+
+    res.status(status).json({ message });
   }
 }

@@ -1,6 +1,5 @@
 import axios from "axios";
 
-// 1. Definição das Interfaces (Tipagem)
 interface DisciplineRequest {
   disciplineId: string;
 }
@@ -37,13 +36,9 @@ interface MappedGroup {
   schedule: string;
 }
 
-// Configuração de URLs
 const JAVA_API_URL = process.env.JAVA_API_URL || "http://localhost:8080";
 const API_URL = `${JAVA_API_URL}/api/group`;
 
-/**
- * Busca detalhes de um grupo específico.
- */
 export async function fetchGroupDetail(
   groupId: string,
   token: string
@@ -62,9 +57,21 @@ export async function fetchGroupDetail(
   }
 }
 
-/**
- * Solicita entrada em um grupo via Query Parameter.
- */
+export async function fetchMyGroups(token: string): Promise<MappedGroup[]> {
+  try {
+    // Fallback para quando endpoint Java não existir ainda
+    const response = await axios.get<any>(`${API_URL}/mygroups`, {
+      headers: { Authorization: token },
+    });
+    return Array.isArray(response.data) ? response.data.map(mapGroup) : [];
+  } catch (error: unknown) {
+    console.log(
+      "⚠️ Endpoint /mygroups não encontrado, retornando grupos vazios"
+    );
+    return []; // Graceful fallback
+  }
+}
+
 export async function joinGroup(groupId: string, token: string): Promise<void> {
   try {
     await axios.post(`${API_URL}/join`, null, {
@@ -77,15 +84,11 @@ export async function joinGroup(groupId: string, token: string): Promise<void> {
   }
 }
 
-/**
- * Cria um novo grupo enviando os dados mapeados para o Backend Java.
- */
 export async function createGroup(
   groupData: CreateGroupData,
   token: string
 ): Promise<string> {
   try {
-    // Tratamento para extrair o número de participantes de strings como "5-10"
     const maxMembersValue = groupData.participants.includes("-")
       ? parseInt(groupData.participants.split("-")[1])
       : parseInt(groupData.participants);
@@ -109,9 +112,6 @@ export async function createGroup(
   }
 }
 
-/**
- * Mapeia os dados brutos do Java (ApiGroupResponse) para o formato do React (MappedGroup).
- */
 function mapGroup(apiGroup: ApiGroupResponse): MappedGroup {
   return {
     id: apiGroup.id,
@@ -126,9 +126,6 @@ function mapGroup(apiGroup: ApiGroupResponse): MappedGroup {
   };
 }
 
-/**
- * Função utilitária para log de erros sem usar 'any' no catch.
- */
 function handleAxiosError(error: unknown, context: string): void {
   if (axios.isAxiosError(error)) {
     console.error(
