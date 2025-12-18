@@ -50,6 +50,7 @@ br\com\hubdosaber\user\mapper\UserMapper.class
 br\com\hubdosaber\university\model\University.class
 br\com\hubdosaber\group\service\GroupService.class
 br\com\hubdosaber\course\controller\CourseController.class
+br\com\hubdosaber\group\controller\StudyGroupController.class
 br\com\hubdosaber\university\mapper\UniversityMapper.class
 br\com\hubdosaber\user\model\User.class
 br\com\hubdosaber\config\CorsConfig.class

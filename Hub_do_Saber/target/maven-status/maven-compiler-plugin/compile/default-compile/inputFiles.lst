@@ -21,6 +21,7 @@ C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\c
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\discipline\request\UpdateDisciplineRequest.java
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\discipline\service\DisciplineService.java
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\group\controller\GroupController.java
+C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\group\controller\StudyGroupController.java
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\group\dto\StudyGroupDetailDTO.java
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\group\dto\StudyGroupDTO.java
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\group\model\StudyGroup.java
