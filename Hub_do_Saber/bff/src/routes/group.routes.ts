@@ -1,24 +1,22 @@
 import { Router } from "express";
-import {
-  getGroupDetail,
-  joinGroup,
-  createGroup,
-  getMyGroups,
-} from "../controllers/group.controller";
+import * as groupController from "../controllers/group.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
 
 const router = Router();
 
-// Meus grupos (nova rota)
-router.get("/", authMiddleware, getMyGroups);
+// Listar todos os grupos
+router.get("/", authMiddleware, groupController.getAllGroups);
 
-// Detalhes de um grupo específico
-router.get("/:id", authMiddleware, getGroupDetail);
+// ⚠️ IMPORTANTE: /my deve vir ANTES de /:id
+router.get("/my", authMiddleware, groupController.getMyGroups);
+
+// Buscar detalhes de um grupo específico
+router.get("/:id", authMiddleware, groupController.getGroupDetail);
 
 // Entrar em um grupo
-router.post("/:id/join", authMiddleware, joinGroup);
+router.post("/:id/join", authMiddleware, groupController.joinGroup);
 
 // Criar novo grupo
-router.post("/", authMiddleware, createGroup);
+router.post("/", authMiddleware, groupController.createGroup);
 
 export default router;

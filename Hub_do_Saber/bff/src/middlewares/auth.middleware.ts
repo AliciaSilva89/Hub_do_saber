@@ -1,4 +1,3 @@
-// middlewares/auth.middleware.ts
 import { Request, Response, NextFunction } from "express";
 
 export function authMiddleware(
@@ -19,3 +18,6 @@ export function authMiddleware(
 
   next();
 }
+
+// Export alternativo para compatibilidade
+export const authenticateToken = authMiddleware;

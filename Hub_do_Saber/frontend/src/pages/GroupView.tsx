@@ -1,56 +1,40 @@
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, MapPin, User, Calendar } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { 
+  Users, 
+  MapPin, 
+  User, 
+  Calendar, 
+  Clock,
+  BookOpen,
+  ArrowLeft,
+  Loader2,
+  MessageSquare
+} from "lucide-react";
 import { fetchGroupDetail, joinGroup } from "@/services/groupService";
 import type { GroupDetail } from "@/services/groupService";
-
-interface DisplayGroupDetail {
-  id: string;
-  title: string;
-  description: string;
-  subject: string;
-  leader: string;
-  location: string;
-  participants: number;
-  maxMembers: number;
-  schedule?: string;
-  image?: string;
-}
 
 const GroupView = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-
-  const [groupData, setGroupData] = useState<DisplayGroupDetail | null>(null);
+  const [groupData, setGroupData] = useState<GroupDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
-
-  const fallback: DisplayGroupDetail = {
-    id: "",
-    title: "Grupo de Estudos",
-    description: "Descrição do grupo.",
-    subject: "Geral",
-    leader: "Organizador",
-    location: "Online",
-    participants: 0,
-    maxMembers: 0,
-    schedule: "",
-    image: "📚",
-  };
+  const [isAlreadyMember, setIsAlreadyMember] = useState(false);
 
   useEffect(() => {
-    const load = async () => {
+    const loadGroupData = async () => {
       if (!id) {
         setLoading(false);
         setError("ID do grupo não encontrado");
         return;
       }
 
-      // Verifica se tem token antes de tentar carregar
       const token = localStorage.getItem("hubdosaber-token");
       if (!token) {
         navigate("/login");
@@ -59,27 +43,18 @@ const GroupView = () => {
 
       try {
         setError(null);
-        const gd: GroupDetail = await fetchGroupDetail(id);
-        const participantsCount = Array.isArray(gd.members) ? gd.members.length : 0;
+        console.log("📥 Carregando dados do grupo:", id);
+        const data = await fetchGroupDetail(id);
+        setGroupData(data);
         
-        setGroupData({
-          id: gd.id,
-          title: gd.name,
-          description: gd.description,
-          subject: gd.disciplineName,
-          leader: gd.ownerName,
-          location: gd.universityName || "Online",
-          participants: participantsCount,
-          maxMembers: gd.maxMembers,
-          schedule: gd.schedule || "Não definido",
-          image: "📚",
-        });
+        // Verificar se o usuário já é membro (você pode adicionar essa lógica)
+        // setIsAlreadyMember(data.members.some(member => member.id === currentUserId));
+        
       } catch (err: unknown) {
         const error = err instanceof Error ? err : new Error("Erro desconhecido");
-        console.error("Erro ao carregar grupo:", error);
+        console.error("❌ Erro ao carregar grupo:", error);
         setError(error.message || "Erro ao carregar grupo");
         
-        // Se for erro de autenticação, redireciona para login
         if (error.message?.includes("login")) {
           setTimeout(() => navigate("/login"), 2000);
         }
@@ -88,12 +63,11 @@ const GroupView = () => {
       }
     };
 
-    load();
+    loadGroupData();
   }, [id, navigate]);
 
   const handleJoin = async () => {
     const token = localStorage.getItem("hubdosaber-token");
-    
     if (!token) {
       navigate("/login");
       return;
@@ -109,28 +83,16 @@ const GroupView = () => {
       await joinGroup(id);
       alert("Você entrou no grupo com sucesso!");
       
-      // Recarrega os dados do grupo para atualizar o número de participantes
-      const gd: GroupDetail = await fetchGroupDetail(id);
-      const participantsCount = Array.isArray(gd.members) ? gd.members.length : 0;
+      // Recarregar os dados do grupo para atualizar participantes
+      const updatedData = await fetchGroupDetail(id);
+      setGroupData(updatedData);
+      setIsAlreadyMember(true);
       
-      setGroupData({
-        id: gd.id,
-        title: gd.name,
-        description: gd.description,
-        subject: gd.disciplineName,
-        leader: gd.ownerName,
-        location: gd.universityName || "Online",
-        participants: participantsCount,
-        maxMembers: gd.maxMembers,
-        schedule: gd.schedule || "Não definido",
-        image: "📚",
-      });
     } catch (err: unknown) {
       const error = err instanceof Error ? err : new Error("Erro desconhecido");
-      console.error("Erro ao entrar no grupo:", error);
+      console.error("❌ Erro ao entrar no grupo:", error);
       alert(error.message || "Erro ao entrar no grupo");
       
-      // Se for erro de autenticação, redireciona para login
       if (error.message?.includes("login")) {
         navigate("/login");
       }
@@ -139,7 +101,49 @@ const GroupView = () => {
     }
   };
 
-  const displayData = groupData || fallback;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="text-lg">Carregando grupo...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b bg-card px-6 py-4">
+          <div className="flex items-center justify-between max-w-7xl mx-auto">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold">HS</span>
+              </div>
+              <span className="font-semibold text-lg">Hub do Saber</span>
+            </div>
+          </div>
+        </header>
+
+        <main className="max-w-7xl mx-auto px-6 py-12">
+          <Card className="p-12 text-center border-red-200 bg-red-50">
+            <p className="text-xl text-red-700 mb-4">{error}</p>
+            <Button onClick={() => navigate("/dashboard")} variant="outline">
+              Voltar para Dashboard
+            </Button>
+          </Card>
+        </main>
+      </div>
+    );
+  }
+
+  if (!groupData) {
+    return null;
+  }
+
+  const participantsCount = Array.isArray(groupData.members) ? groupData.members.length : 0;
+  const availableSlots = Math.max(groupData.maxMembers - participantsCount, 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -147,14 +151,11 @@ const GroupView = () => {
       <header className="border-b bg-card px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
-            <img
-              src="/logohubdosaber.png"
-              alt="Logo da plataforma Hub do Saber"
-              className="w-16 h-16 rounded-lg object-cover"
-            />
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold">HS</span>
+            </div>
             <span className="font-semibold text-lg">Hub do Saber</span>
           </div>
-          
           <nav className="flex items-center gap-6">
             <Link to="/dashboard" className="text-muted-foreground hover:text-primary">
               Grupos
@@ -162,136 +163,198 @@ const GroupView = () => {
             <Link to="/profile" className="text-muted-foreground hover:text-primary">
               Perfil
             </Link>
-            <Link to="/saiba" className="text-muted-foreground hover:text-primary">
-              Saiba
-            </Link>
-            <Link to="/create-group">
-              <Button className="bg-black hover:bg-black/90 text-white">
-                Criar Grupo
-              </Button>
-            </Link>
+            <Button onClick={() => navigate("/create-group")} className="bg-black text-white">
+              Criar Grupo
+            </Button>
           </nav>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-6 py-12">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Saiba mais sobre o grupo</h1>
-        </div>
+      <main className="max-w-7xl mx-auto px-6 py-8">
+        {/* Breadcrumb / Back Button */}
+        <Button
+          variant="ghost"
+          onClick={() => navigate("/dashboard")}
+          className="mb-6 -ml-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Voltar para grupos
+        </Button>
 
-        {loading && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Carregando...</p>
-          </div>
-        )}
-
-        {error && (
-          <div className="text-center py-12">
-            <p className="text-red-600 mb-4">{error}</p>
-            <Button onClick={() => navigate("/dashboard")}>
-              Voltar para Dashboard
-            </Button>
-          </div>
-        )}
-
-        {!loading && !error && (
-          <Card className="bg-gray-50">
-            <CardContent className="p-8">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Left Column - Group Image and Info */}
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-2xl font-bold mb-2">
-                      {displayData.title}
-                    </h2>
-                    <p className="text-muted-foreground mb-4">
-                      {displayData.description}
-                    </p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Main Info */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Hero Card */}
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <h1 className="text-3xl font-bold mb-2">{groupData.name}</h1>
+                    <Badge variant="secondary" className="mb-4">
+                      {groupData.disciplineName}
+                    </Badge>
                   </div>
-
-                  {/* Group Image */}
-                  <div className="w-full max-w-sm mx-auto">
-                    <div className="bg-gradient-to-r from-blue-100 via-purple-50 to-orange-50 rounded-lg p-8 flex items-center justify-center">
-                      <div className="text-center">
-                        <div className="text-6xl mb-4">
-                          {displayData.image}
-                        </div>
-                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-                          <div className="text-2xl">🔍</div>
-                        </div>
-                      </div>
-                    </div>
+                  <div className="w-20 h-20 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg flex items-center justify-center text-4xl">
+                    📚
                   </div>
                 </div>
 
-                {/* Right Column - Details */}
-                <div className="space-y-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <Badge variant="outline" className="p-2">
-                        <span className="text-sm">📖</span>
-                      </Badge>
-                      <span className="font-medium">
-                        {displayData.subject}
-                      </span>
-                    </div>
+                <p className="text-muted-foreground text-lg mb-6">
+                  {groupData.description}
+                </p>
 
-                    <div className="flex items-center gap-3">
-                      <Badge variant="outline" className="p-2">
-                        <User className="h-4 w-4" />
+                {/* Action Buttons */}
+                <div className="flex gap-3">
+                  {isAlreadyMember ? (
+                    <>
+                      <Button
+                        onClick={() => navigate(`/group/${id}/chat`)}
+                        className="bg-green-600 hover:bg-green-700 flex-1"
+                      >
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        Abrir Chat do Grupo
+                      </Button>
+                      <Badge variant="outline" className="px-4 py-2 text-sm">
+                        ✓ Você é membro
                       </Badge>
-                      <span className="font-medium">
-                        {displayData.leader}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <Badge variant="outline" className="p-2">
-                        <MapPin className="h-4 w-4" />
-                      </Badge>
-                      <span className="font-medium">
-                        {displayData.location}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <Badge variant="outline" className="p-2">
-                        <Users className="h-4 w-4" />
-                      </Badge>
-                      <span className="font-medium">
-                        {displayData.participants} participantes - 
-                        {Math.max(
-                          displayData.maxMembers - displayData.participants, 
-                          0
-                        )} vagas restantes
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <Badge variant="outline" className="p-2">
-                        <Calendar className="h-4 w-4" />
-                      </Badge>
-                      <span className="font-medium">
-                        {displayData.schedule}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="pt-6">
-                    <Button 
+                    </>
+                  ) : (
+                    <Button
                       onClick={handleJoin}
-                      disabled={joining}
-                      className="w-full bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white py-3 text-lg font-medium disabled:opacity-50"
+                      disabled={joining || availableSlots === 0}
+                      className="bg-blue-600 hover:bg-blue-700 flex-1"
                     >
-                      {joining ? "Entrando..." : "Participar do Grupo"}
+                      {joining ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Entrando...
+                        </>
+                      ) : availableSlots === 0 ? (
+                        "Grupo Cheio"
+                      ) : (
+                        <>
+                          <Users className="h-4 w-4 mr-2" />
+                          Participar do Grupo
+                        </>
+                      )}
                     </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Group Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Detalhes do Grupo</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Disciplina</p>
+                    <p className="font-medium">{groupData.disciplineName}</p>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+
+                <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                  <User className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Organizador</p>
+                    <p className="font-medium">{groupData.ownerName}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Universidade</p>
+                    <p className="font-medium">{groupData.universityName}</p>
+                  </div>
+                </div>
+
+                {groupData.schedule && (
+                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                    <Clock className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Horário</p>
+                      <p className="font-medium">{groupData.schedule}</p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column - Sidebar */}
+          <div className="space-y-6">
+            {/* Participants Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Participantes
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                    <div>
+                      <p className="text-2xl font-bold">{participantsCount}</p>
+                      <p className="text-sm text-muted-foreground">Membros atuais</p>
+                    </div>
+                    <Users className="h-8 w-8 text-muted-foreground" />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div>
+                      <p className="text-2xl font-bold text-blue-600">{availableSlots}</p>
+                      <p className="text-sm text-blue-700">Vagas disponíveis</p>
+                    </div>
+                    <Calendar className="h-8 w-8 text-blue-600" />
+                  </div>
+
+                  <div className="pt-4 border-t">
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Capacidade máxima: {groupData.maxMembers} membros
+                    </p>
+                    <div className="w-full bg-muted rounded-full h-2">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full transition-all"
+                        style={{
+                          width: `${(participantsCount / groupData.maxMembers) * 100}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Lista de Membros */}
+                {groupData.members && groupData.members.length > 0 && (
+                  <div className="mt-6">
+                    <h4 className="font-semibold mb-3 text-sm">Membros do grupo</h4>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {groupData.members.map((member: any, index: number) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50"
+                        >
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback>
+                              {member.name?.[0]?.toUpperCase() || "U"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm">{member.name || "Usuário"}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </main>
     </div>
   );

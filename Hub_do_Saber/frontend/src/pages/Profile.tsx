@@ -9,15 +9,30 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger,
+  DialogFooter  
+} from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Edit3, Save, CalendarIcon, Plus, Trash2, Clock, Video } from "lucide-react";
+import { 
+  Edit3, 
+  Save, 
+  CalendarIcon, 
+  Plus, 
+  Trash2, 
+  Clock, 
+  Video,
+  GraduationCap,
+  BookOpen  // ✅ CONSOLIDADO EM UMA ÚNICA IMPORTAÇÃO
+} from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import axios from "axios";
-import {  CalendarIcon,  Plus,  Video,  Trash2, Save, Edit3,GraduationCap,BookOpen} from "lucide-react";
-
 
 interface Group {
   id: string;
@@ -49,7 +64,6 @@ const Profile = () => {
   const [loadingGroups, setLoadingGroups] = useState(true);
   const [loadingProfile, setLoadingProfile] = useState(true);
   
-  // ✅ ESTADOS DA AGENDA RESTAURADOS
   const [events, setEvents] = useState<CalendarEvent[]>([
     { id: "1", title: "Aula de Programação", type: "aula", date: new Date(), time: "19:00" }
   ]);
@@ -70,7 +84,6 @@ const Profile = () => {
     courseName: "---",
   });
 
-  // Funções da Agenda ✅ RESTAURADAS
   const handleAddEvent = () => {
     if (!newEvent.title || !newEvent.time) return;
     setEvents(prev => [...prev, { ...newEvent, id: Date.now().toString() }]);
@@ -177,7 +190,6 @@ const Profile = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Perfil Editável */}
           <div className="lg:col-span-2 space-y-8">
             <Card>
               <CardContent className="p-6">
@@ -230,7 +242,6 @@ const Profile = () => {
               </CardContent>
             </Card>
 
-            {/* Meus Grupos */}
             <div>
               <h2 className="text-2xl font-bold mb-6">Meus grupos</h2>
               {loadingGroups ? (
@@ -258,14 +269,12 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* ✅ SIDEBAR AGENDA COMPLETA COM BOTÃO + DIALOG */}
           <div className="space-y-4">
             <Card>
               <CardHeader className="pb-2 flex flex-row items-center justify-between">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <CalendarIcon className="h-5 w-5" /> Agenda
                 </CardTitle>
-                {/* ✅ BOTÃO ADICIONAR EVENTO RESTAURADO */}
                 <Dialog open={isAddEventOpen} onOpenChange={setIsAddEventOpen}>
                   <DialogTrigger asChild>
                     <Button size="sm" variant="ghost">
@@ -348,7 +357,6 @@ const Profile = () => {
                   className="rounded-md border"
                   locale={ptBR}
                 />
-                {/* Eventos do dia selecionado */}
                 {selectedDate && getEventsForDate(selectedDate).length > 0 && (
                   <div className="mt-4 space-y-2">
                     <h4 className="font-medium flex items-center gap-2">

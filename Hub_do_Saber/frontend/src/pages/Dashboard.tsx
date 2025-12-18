@@ -1,81 +1,63 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Users, Clock, MapPin } from "lucide-react";
+import { Search, Users, Clock, MapPin, Loader2 } from "lucide-react";
+import { fetchAllGroups, Group } from "@/services/groupService";
+
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("");
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const subjects = [
-    "Português", "Matemática", "História", "Geografia", 
-    "Inglês", "Ciências", "Química", "Física", "Espanhol"
-  ];
+  // ✅ Carregar grupos do banco de dados
+  useEffect(() => {
+    const loadGroups = async () => {
+      const token = localStorage.getItem("hubdosaber-token");
+      
+      if (!token) {
+        navigate("/login");
+        return;
+      }
 
-  const groups = [
-    {
-      id: "8a1b2c3d-4e5f-6789-0abc-def123456789",
-      title: "Grupo de Estudos - Matemática",
-      description: "Estudo aprofundado de cálculo, álgebra e geometria para o ensino médio e superior.",
-      participants: 15,
-      schedule: "3ª e 5ª - 19hrs",
-      status: "Online",
-      subject: "Matemática"
-    },
-    {
-      id: "a7b6c5d4-e3f2-1a0b-9c8d-7e6f5a4b3c2d",
-      title: "Grupo de Estudos - Português",
-      description: "Análise e interpretação de textos, gramática e redação para exames e aprimoramento.",
-      participants: 15,
-      schedule: "3ª e 5ª - 19hrs",
-      status: "Online",
-      subject: "Português"
-    },
-    {
-      id: "11111111-2222-3333-4444-555555555555",
-      title: "Grupo de Estudos - Filosofia",
-      description: "Explorando os grandes pensadores da antiguidade e suas contribuições para o conhecimento humano.",
-      participants: 15,
-      schedule: "3ª e 5ª - 19hrs",
-      status: "Online",
-      subject: "Filosofia"
-    },
-    {
-      id: "66666666-7777-8888-9999-000000000000",
-      title: "Grupo de Estudos - História",
-      description: "Viagem no tempo: da pré-história à contemporaneidade, desvendando os fatos que moldaram o mundo.",
-      participants: 12,
-      schedule: "2ª e 4ª - 20hrs",
-      status: "Online",
-      subject: "História"
-    },
-    {
-      id: "123e4567-e89b-12d3-a456-426614174000",
-      title: "Grupo de Estudos - Física",
-      description: "Desvendando as leis do universo: mecânica, termodinâmica, eletromagnetismo e muito mais.",
-      participants: 18,
-      schedule: "3ª e 6ª - 18hrs",
-      status: "Online",
-      subject: "Física"
-    },
-    {
-      id: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-      title: "Grupo de Estudos - Química",
-      description: "A estrutura da matéria e suas transformações: explorando reações, elementos e compostos.",
-      participants: 10,
-      schedule: "4ª e 5ª - 19hrs",
-      status: "Online",
-      subject: "Química"
-    }
-  ];
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await fetchAllGroups();
+        setGroups(data);
+      } catch (err: any) {
+        console.error("Erro ao carregar grupos:", err);
+        setError(err.message || "Erro ao carregar grupos");
+        
+        // Se for erro de autenticação, redireciona para login
+        if (err.message?.includes("login")) {
+          setTimeout(() => navigate("/login"), 2000);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    loadGroups();
+  }, [navigate]);
+
+  // ✅ Extrair disciplinas únicas dos grupos carregados
+  const subjects = Array.from(
+    new Set(groups.map(group => group.disciplineName).filter(Boolean))
+  ).sort();
+
+  // ✅ Filtrar grupos baseado na busca e disciplina selecionada
   const filteredGroups = groups.filter(group => {
-    const matchesSearch = group.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         group.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSubject = !selectedSubject || group.subject === selectedSubject;
+    const matchesSearch = 
+      group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      group.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSubject = !selectedSubject || group.disciplineName === selectedSubject;
     return matchesSearch && matchesSubject;
   });
 
@@ -85,119 +67,142 @@ const Dashboard = () => {
       <header className="border-b bg-card px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
-            <img
-              src="/logohubdosaber.png"
-              alt="Logo da plataforma Hub do Saber"
-              className="w-16 h-16 rounded-lg object-cover"
-            />
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold">HS</span>
+            </div>
             <span className="font-semibold text-lg">Hub do Saber</span>
           </div>
-          
           <nav className="flex items-center gap-6">
-            <Link to="/dashboard" className="text-foreground hover:text-primary font-medium">
-              Grupos
-            </Link>
-            <Link to="/profile" className="text-muted-foreground hover:text-primary">
-              Perfil
-            </Link>
-            <Link to="/saiba" className="text-muted-foreground hover:text-primary">
-              Saiba
-            </Link>
-            <Link to="/create-group">
-              <Button className="bg-black hover:bg-black/90 text-white">
-                Criar Grupo
-              </Button>
-            </Link>
+            <Link to="/dashboard" className="text-foreground font-medium">Grupos</Link>
+            <Link to="/profile" className="text-muted-foreground hover:text-primary">Perfil</Link>
+            <Button onClick={() => navigate("/create-group")} className="bg-black text-white">
+              Criar Grupo
+            </Button>
           </nav>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Hero Section */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-4">Encontre seu grupo!</h1>
-          <p className="text-lg text-muted-foreground mb-2">
+      {/* Hero Section */}
+      <section className="bg-gradient-to-br from-blue-50 to-purple-50 py-16 px-6">
+        <div className="max-w-7xl mx-auto text-center">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">Encontre seu grupo!</h1>
+          <p className="text-xl text-muted-foreground mb-8">
             Conecte-se com pessoas que compartilham sua paixão pelo conhecimento.
           </p>
-          <p className="text-lg text-muted-foreground mb-8">
+          <p className="text-lg text-muted-foreground">
             Descubra grupos interativos e tenha acesso a aulas presenciais e online.
           </p>
-          
-          {/* Search Bar */}
-          <div className="relative max-w-md mx-auto mb-6">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        </div>
+      </section>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-6 py-12">
+        {/* Search Bar */}
+        <div className="flex flex-col md:flex-row gap-4 mb-8">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
             <Input
-              placeholder="Pesquisar"
+              placeholder="Buscar grupos..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
+          <select
+            value={selectedSubject}
+            onChange={(e) => setSelectedSubject(e.target.value)}
+            className="px-4 py-2 border rounded-md bg-background"
+          >
+            <option value="">Todas as disciplinas</option>
+            {subjects.map((subject) => (
+              <option key={subject} value={subject}>
+                {subject}
+              </option>
+            ))}
+          </select>
         </div>
 
-        {/* Subject Filters */}
-        <div className="flex flex-wrap gap-2 justify-center mb-8">
-          <Badge
-            variant={!selectedSubject ? "default" : "outline"}
-            className="cursor-pointer hover:bg-primary/90"
-            onClick={() => setSelectedSubject("")}
-          >
-            Todas
-          </Badge>
-          {subjects.map((subject) => (
-            <Badge
-              key={subject}
-              variant={selectedSubject === subject ? "default" : "outline"}
-              className="cursor-pointer hover:bg-primary/90"
-              onClick={() => setSelectedSubject(subject === selectedSubject ? "" : subject)}
-            >
-              {subject}
-            </Badge>
-          ))}
-        </div>
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-3 text-lg">Carregando grupos...</span>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+            <p className="font-semibold">Erro ao carregar grupos</p>
+            <p>{error}</p>
+          </div>
+        )}
 
         {/* Groups Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredGroups.map((group) => (
-            <Link key={group.id} to={`/group/${group.id}`}>
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                <CardHeader className="pb-3">
-                  {/* Group Image Placeholder */}
-                  <div className="w-full h-32 bg-gradient-to-r from-blue-100 via-purple-50 to-orange-50 rounded-lg mb-3 flex items-center justify-center">
-                    <div className="text-4xl">📚</div>
-                  </div>
-                  <CardTitle className="text-lg">{group.title}</CardTitle>
-                  <CardDescription className="text-sm line-clamp-2">
-                    {group.description}
-                  </CardDescription>
-                </CardHeader>
-                
-                <CardContent className="space-y-2 pt-0">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4" />
-                    <span>{group.status}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Users className="h-4 w-4" />
-                    <span>{group.participants} participantes</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Clock className="h-4 w-4" />
-                    <span>{group.schedule}</span>
-                  </div>
-                </CardContent>
+        {!loading && !error && (
+          <>
+            {filteredGroups.length === 0 ? (
+              <Card className="p-12 text-center border-dashed border-2">
+                <p className="text-xl text-muted-foreground mb-4">
+                  Nenhum grupo encontrado com os filtros aplicados.
+                </p>
+                <Button
+                  onClick={() => {
+                    setSearchTerm("");
+                    setSelectedSubject("");
+                  }}
+                  variant="outline"
+                >
+                  Limpar filtros
+                </Button>
               </Card>
-            </Link>
-          ))}
-        </div>
-
-        {filteredGroups.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Nenhum grupo encontrado com os filtros aplicados.</p>
-          </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredGroups.map((group) => (
+                  <Card
+                    key={group.id}
+                    className="hover:shadow-lg transition-all cursor-pointer border-2 hover:border-primary/30"
+                    onClick={() => navigate(`/group/${group.id}`)}
+                  >
+                    <CardHeader>
+                      <div className="w-full h-32 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg mb-4 flex items-center justify-center text-4xl">
+                        📚
+                      </div>
+                      <CardTitle className="text-xl">{group.name}</CardTitle>
+                      <CardDescription className="line-clamp-2">
+                        {group.description}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <Badge variant="secondary" className="mb-2">
+                          {group.disciplineName}
+                        </Badge>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Users className="h-4 w-4" />
+                          <span>
+                            {group.currentMembers || 0} / {group.maxMembers} participantes
+                          </span>
+                        </div>
+                        {group.schedule && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Clock className="h-4 w-4" />
+                            <span>{group.schedule}</span>
+                          </div>
+                        )}
+                        {group.universityName && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <MapPin className="h-4 w-4" />
+                            <span>{group.universityName}</span>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>
