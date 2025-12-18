@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { fetchGroupDetail, joinGroup } from "@/services/groupService";
 import type { GroupDetail } from "@/services/groupService";
+import axios from "axios";
 
 const GroupView = () => {
   const { id } = useParams<{ id: string }>();
@@ -26,45 +27,72 @@ const GroupView = () => {
   const [error, setError] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
   const [isAlreadyMember, setIsAlreadyMember] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadGroupData = async () => {
-      if (!id) {
-        setLoading(false);
-        setError("ID do grupo não encontrado");
-        return;
+ useEffect(() => {
+  const loadGroupData = async () => {
+    if (!id) {
+      setLoading(false);
+      setError("ID do grupo não encontrado");
+      return;
+    }
+
+    const token = localStorage.getItem("hubdosaber-token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      setError(null);
+      
+      // Buscar dados do usuário logado
+      const userResponse = await axios.get("http://localhost:8080/api/users/me", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const userId = userResponse.data.id;
+      setCurrentUserId(userId);
+      
+      console.log("👤 ID do usuário logado:", userId);
+      
+      // Buscar dados do grupo
+      const data = await fetchGroupDetail(id);
+      console.log("📦 Dados do grupo recebidos:", data);
+      console.log("👥 Membros do grupo:", data.members);
+      
+      setGroupData(data);
+      
+      // ✅ Verificar se o usuário já é membro (testar diferentes formatos)
+      let isMember = false;
+      
+      if (Array.isArray(data.members)) {
+        isMember = data.members.some((member: any) => {
+          // Tentar diferentes formatos de ID
+          const memberId = member.id || member.userId || member.user?.id;
+          console.log("🔍 Comparando:", memberId, "com", userId);
+          return memberId === userId || memberId === String(userId) || String(memberId) === String(userId);
+        });
       }
-
-      const token = localStorage.getItem("hubdosaber-token");
-      if (!token) {
-        navigate("/login");
-        return;
+      
+      setIsAlreadyMember(isMember);
+      console.log("✅ Usuário já é membro?", isMember);
+      
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error("Erro desconhecido");
+      console.error("❌ Erro ao carregar grupo:", error);
+      setError(error.message || "Erro ao carregar grupo");
+      
+      if (error.message?.includes("login")) {
+        setTimeout(() => navigate("/login"), 2000);
       }
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      try {
-        setError(null);
-        console.log("📥 Carregando dados do grupo:", id);
-        const data = await fetchGroupDetail(id);
-        setGroupData(data);
-        
-        // Verificar se o usuário já é membro (você pode adicionar essa lógica)
-        // setIsAlreadyMember(data.members.some(member => member.id === currentUserId));
-        
-      } catch (err: unknown) {
-        const error = err instanceof Error ? err : new Error("Erro desconhecido");
-        console.error("❌ Erro ao carregar grupo:", error);
-        setError(error.message || "Erro ao carregar grupo");
-        
-        if (error.message?.includes("login")) {
-          setTimeout(() => navigate("/login"), 2000);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
+  loadGroupData();
+}, [id, navigate]);
 
-    loadGroupData();
-  }, [id, navigate]);
 
   const handleJoin = async () => {
     const token = localStorage.getItem("hubdosaber-token");
@@ -142,8 +170,25 @@ const GroupView = () => {
     return null;
   }
 
-  const participantsCount = Array.isArray(groupData.members) ? groupData.members.length : 0;
-  const availableSlots = Math.max(groupData.maxMembers - participantsCount, 0);
+  // ✅ Remover membros duplicados usando Set baseado no ID
+  // ✅ Remover membros duplicados e contar corretamente
+const uniqueMembers = Array.isArray(groupData.members) 
+  ? Array.from(
+      new Map(
+        groupData.members
+          .filter((member: any) => member && (member.id || member.userId)) // Filtrar membros válidos
+          .map((member: any) => {
+            const memberId = member.id || member.userId || member.user?.id;
+            return [memberId, member];
+          })
+      ).values()
+    )
+  : [];
+
+console.log("📊 Membros únicos filtrados:", uniqueMembers);
+
+const participantsCount = uniqueMembers.length;
+const availableSlots = Math.max(groupData.maxMembers - participantsCount, 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -215,7 +260,7 @@ const GroupView = () => {
                         <MessageSquare className="h-4 w-4 mr-2" />
                         Abrir Chat do Grupo
                       </Button>
-                      <Badge variant="outline" className="px-4 py-2 text-sm">
+                      <Badge variant="outline" className="px-4 py-2 text-sm flex items-center">
                         ✓ Você é membro
                       </Badge>
                     </>
@@ -330,14 +375,14 @@ const GroupView = () => {
                   </div>
                 </div>
 
-                {/* Lista de Membros */}
-                {groupData.members && groupData.members.length > 0 && (
+                {/* ✅ Lista de Membros SEM DUPLICATAS */}
+                {uniqueMembers.length > 0 && (
                   <div className="mt-6">
                     <h4 className="font-semibold mb-3 text-sm">Membros do grupo</h4>
                     <div className="space-y-2 max-h-64 overflow-y-auto">
-                      {groupData.members.map((member: any, index: number) => (
+                      {uniqueMembers.map((member: any) => (
                         <div
-                          key={index}
+                          key={member.id}
                           className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50"
                         >
                           <Avatar className="h-8 w-8">

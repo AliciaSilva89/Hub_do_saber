@@ -11,32 +11,33 @@ import org.springframework.data.repository.query.Param;
 
 public interface GroupRepository extends JpaRepository<StudyGroup, UUID> {
 
-    @Query("SELECT g FROM StudyGroup g " +
-            "JOIN FETCH g.discipline d " +
-            "JOIN FETCH d.course c " +
-            "JOIN FETCH c.university u " +
-            "LEFT JOIN FETCH g.userGroups ug " +
-            "LEFT JOIN FETCH ug.user " +
-            "WHERE g.active = true")
-    List<StudyGroup> findAllWithDetails();
+        // ✅ Adicionado DISTINCT para evitar duplicatas
+        @Query("SELECT DISTINCT g FROM StudyGroup g " +
+                        "JOIN FETCH g.discipline d " +
+                        "JOIN FETCH d.course c " +
+                        "JOIN FETCH c.university u " +
+                        "LEFT JOIN FETCH g.userGroups ug " +
+                        "LEFT JOIN FETCH ug.user " +
+                        "WHERE g.active = true")
+        List<StudyGroup> findAllWithDetails();
 
-    @Query("SELECT g FROM StudyGroup g " +
-            "JOIN FETCH g.discipline d " +
-            "JOIN FETCH d.course c " +
-            "JOIN FETCH c.university u " +
-            "LEFT JOIN FETCH g.userGroups ug " +
-            "LEFT JOIN FETCH ug.user " +
-            "WHERE ug.user = :user AND g.active = true")
-    List<StudyGroup> findByUserGroups_UserWithDetails(@Param("user") User user);
+        // ✅ Adicionado DISTINCT para evitar duplicatas
+        @Query("SELECT DISTINCT g FROM StudyGroup g " +
+                        "JOIN FETCH g.discipline d " +
+                        "JOIN FETCH d.course c " +
+                        "JOIN FETCH c.university u " +
+                        "LEFT JOIN FETCH g.userGroups ug " +
+                        "LEFT JOIN FETCH ug.user " +
+                        "WHERE ug.user = :user AND g.active = true")
+        List<StudyGroup> findByUserGroups_UserWithDetails(@Param("user") User user);
 
-    @Query("SELECT g FROM StudyGroup g " +
-            "JOIN FETCH g.discipline d " +
-            "JOIN FETCH d.course c " +
-            "JOIN FETCH c.university u " +
-            "LEFT JOIN FETCH g.userGroups ug " +
-            "LEFT JOIN FETCH ug.user " +
-            "WHERE g.id = :id")
-    Optional<StudyGroup> findGroupDetailById(@Param("id") UUID id);
-
-    
+        // ✅ Adicionado DISTINCT para evitar duplicatas
+        @Query("SELECT DISTINCT g FROM StudyGroup g " +
+                        "JOIN FETCH g.discipline d " +
+                        "JOIN FETCH d.course c " +
+                        "JOIN FETCH c.university u " +
+                        "LEFT JOIN FETCH g.userGroups ug " +
+                        "LEFT JOIN FETCH ug.user " +
+                        "WHERE g.id = :id")
+        Optional<StudyGroup> findGroupDetailById(@Param("id") UUID id);
 }

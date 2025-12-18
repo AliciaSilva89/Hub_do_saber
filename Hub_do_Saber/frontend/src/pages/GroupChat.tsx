@@ -8,17 +8,16 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Send, Settings, Lock, Image, Download, X, Loader2, ArrowLeft } from "lucide-react";
 import { fetchGroupDetail } from "@/services/groupService";
-import { Badge } from "@/components/ui/badge";
 import axios from "axios";
 
 interface Message {
-  id: number;
-  user: string;
+  id: string;
+  userId: string;
   userName: string;
-  message?: string;
-  image?: string;
-  time: string;
-  avatar: string;
+  userAvatar: string;
+  content?: string;
+  imageUrl?: string;
+  createdAt: string;
 }
 
 interface GroupInfo {
@@ -26,6 +25,8 @@ interface GroupInfo {
   avatar: string;
   members: number;
   disciplineName: string;
+  currentMembers: number;
+  maxMembers: number;
 }
 
 interface UserData {
@@ -41,75 +42,122 @@ const GroupChat = () => {
   const [isPrivate, setIsPrivate] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]); // ✅ Inicia vazio
+  const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
   const [groupInfo, setGroupInfo] = useState<GroupInfo>({
     name: "Carregando...",
     avatar: "📚",
     members: 0,
-    disciplineName: ""
+    disciplineName: "",
+    currentMembers: 0,
+    maxMembers: 0
   });
   const [userData, setUserData] = useState<UserData | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // ✅ Carregar dados do grupo e do usuário ao montar o componente
+  // Auto scroll para última mensagem
   useEffect(() => {
-    const loadData = async () => {
-      const token = localStorage.getItem("hubdosaber-token");
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // Carregar dados iniciais e configurar polling
+  useEffect(() => {
+    loadInitialData();
+    
+    // Atualizar mensagens a cada 3 segundos
+    const interval = setInterval(() => {
+      if (id) loadMessages();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [id]);
+
+  const loadInitialData = async () => {
+    const token = localStorage.getItem("hubdosaber-token");
+    
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    if (!id) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Buscar dados do usuário
+      const userResponse = await axios.get("http://localhost:8080/api/users/me", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUserData(userResponse.data);
+
+      // Buscar dados do grupo
+      const groupData = await fetchGroupDetail(id);
+      setGroupInfo({
+        name: groupData.name,
+        avatar: "📚",
+        members: groupData.currentMembers || 0,
+        disciplineName: groupData.disciplineName,
+        currentMembers: groupData.currentMembers || 0,
+        maxMembers: groupData.maxMembers || 10
+      });
+
+      // Buscar mensagens do grupo
+      await loadMessages();
+
+    } catch (error) {
+      console.error("❌ Erro ao carregar dados:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadMessages = async () => {
+    const token = localStorage.getItem("hubdosaber-token");
+    if (!token || !id) return;
+
+    try {
+      const response = await axios.get(
+        `http://localhost:8080/api/groups/${id}/messages`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setMessages(response.data);
+    } catch (error) {
+      console.error("❌ Erro ao carregar mensagens:", error);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !id || sending) return;
+
+    const token = localStorage.getItem("hubdosaber-token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      setSending(true);
       
-      if (!token) {
-        navigate("/login");
-        return;
-      }
+      const response = await axios.post(
+        `http://localhost:8080/api/groups/${id}/messages`,
+        { content: newMessage, imageUrl: null },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-      if (!id) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-
-        // Buscar dados do usuário logado
-        const userResponse = await axios.get("http://localhost:8080/api/users/me", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setUserData(userResponse.data);
-
-        // Buscar dados do grupo
-        const groupData = await fetchGroupDetail(id);
-        setGroupInfo({
-          name: groupData.name,
-          avatar: "📚",
-          members: Array.isArray(groupData.members) ? groupData.members.length : 0,
-          disciplineName: groupData.disciplineName
-        });
-
-        // ✅ Aqui você pode buscar as mensagens do grupo do backend
-        // Por enquanto, inicia vazio
-        
-      } catch (error) {
-        console.error("❌ Erro ao carregar dados:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, [id, navigate]);
-
-  const handleSendMessage = () => {
-    if (newMessage.trim() && userData) {
-      const newMsg: Message = {
-        id: messages.length + 1,
-        user: userData.id,
-        userName: userData.name,
-        message: newMessage,
-        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-        avatar: userData.name.charAt(0).toUpperCase()
-      };
-      setMessages([...messages, newMsg]);
+      // Adiciona a nova mensagem ao estado
+      setMessages([...messages, response.data]);
       setNewMessage("");
+    } catch (error) {
+      console.error("❌ Erro ao enviar mensagem:", error);
+      alert("Erro ao enviar mensagem. Tente novamente.");
+    } finally {
+      setSending(false);
     }
   };
 
@@ -120,36 +168,66 @@ const GroupChat = () => {
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && userData) {
+    if (!file || !id || sending) return;
+
+    const token = localStorage.getItem("hubdosaber-token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      setSending(true);
+      
+      // Converter imagem para base64
       const reader = new FileReader();
-      reader.onloadend = () => {
-        const newMsg: Message = {
-          id: messages.length + 1,
-          user: userData.id,
-          userName: userData.name,
-          image: reader.result as string,
-          time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-          avatar: userData.name.charAt(0).toUpperCase()
-        };
-        setMessages([...messages, newMsg]);
+      reader.onloadend = async () => {
+        try {
+          const response = await axios.post(
+            `http://localhost:8080/api/groups/${id}/messages`,
+            { content: "", imageUrl: reader.result as string },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+
+          setMessages([...messages, response.data]);
+        } catch (error) {
+          console.error("❌ Erro ao enviar imagem:", error);
+          alert("Erro ao enviar imagem. Tente novamente.");
+        } finally {
+          setSending(false);
+        }
       };
       reader.readAsDataURL(file);
 
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+    } catch (error) {
+      console.error("❌ Erro ao processar imagem:", error);
+      setSending(false);
     }
   };
 
-  const handleDownloadImage = (imageUrl: string, index: number) => {
+  const handleDownloadImage = (imageUrl: string, fileName: string) => {
     const link = document.createElement('a');
     link.href = imageUrl;
-    link.download = `imagem-${index}.png`;
+    link.download = `${fileName}.png`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const formatTime = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
   if (loading) {
@@ -203,6 +281,9 @@ const GroupChat = () => {
                 <div className="text-5xl">{groupInfo.avatar}</div>
                 <h3 className="font-semibold">{groupInfo.name}</h3>
                 <p className="text-sm text-muted-foreground">{groupInfo.disciplineName}</p>
+                <p className="text-xs text-muted-foreground">
+                  {groupInfo.currentMembers}/{groupInfo.maxMembers} membros
+                </p>
               </div>
 
               {/* Privacy Settings */}
@@ -221,8 +302,8 @@ const GroupChat = () => {
                 </div>
               </div>
 
-              <Button variant="outline" className="w-full">
-                Editar Informações
+              <Button variant="outline" className="w-full" onClick={() => navigate(`/group/${id}`)}>
+                Ver Detalhes do Grupo
               </Button>
             </CardContent>
           </Card>
@@ -253,7 +334,7 @@ const GroupChat = () => {
                 <div>
                   <h2 className="font-semibold">{groupInfo.name}</h2>
                   <p className="text-xs text-muted-foreground">
-                    {groupInfo.members} {groupInfo.members === 1 ? 'membro' : 'membros'}
+                    {groupInfo.currentMembers} {groupInfo.currentMembers === 1 ? 'membro' : 'membros'}
                   </p>
                 </div>
               </div>
@@ -268,92 +349,95 @@ const GroupChat = () => {
             </Button>
           </div>
 
-        {/* Messages */}
-<div className="flex-1 overflow-y-auto p-6 space-y-4">
-  {messages.length === 0 ? (
-    <div className="flex flex-col items-center justify-center h-full text-center">
-      <div className="text-6xl mb-4">💬</div>
-      <h3 className="text-xl font-semibold mb-2">Nenhuma mensagem ainda</h3>
-      <p className="text-muted-foreground max-w-md">
-        Seja o primeiro a enviar uma mensagem para o grupo! Compartilhe suas ideias e comece a conversa.
-      </p>
-    </div>
-  ) : (
-    <>
-      <div className="text-center">
-        <span className="text-xs text-muted-foreground px-3 py-1 bg-muted rounded-full">
-          {new Date().toLocaleDateString('pt-BR')}
-        </span>
-      </div>
-      {messages.map((message) => {
-        const isOwnMessage = userData && message.user === userData.id;
-        
-        return (
-          <div
-            key={message.id}
-            className={`flex gap-3 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
-          >
-            {/* Avatar à esquerda apenas para mensagens de outros */}
-            {!isOwnMessage && (
-              <Avatar className="h-10 w-10">
-                <AvatarFallback>{message.avatar}</AvatarFallback>
-              </Avatar>
-            )}
-
-            {/* Conteúdo da mensagem */}
-            <div className={`flex flex-col max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'}`}>
-              <div className={`flex items-center gap-2 mb-1 ${isOwnMessage ? 'flex-row-reverse' : ''}`}>
-                <span className="font-medium text-sm">{message.userName}</span>
-                <span className="text-xs text-muted-foreground">{message.time}</span>
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            {messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <div className="text-6xl mb-4">💬</div>
+                <h3 className="text-xl font-semibold mb-2">Nenhuma mensagem ainda</h3>
+                <p className="text-muted-foreground max-w-md">
+                  Seja o primeiro a enviar uma mensagem para o grupo! Compartilhe suas ideias e comece a conversa.
+                </p>
               </div>
+            ) : (
+              <>
+                {messages.map((message, index) => {
+                  const isOwnMessage = userData && message.userId === userData.id;
+                  const showDate = index === 0 || 
+                    formatDate(messages[index - 1].createdAt) !== formatDate(message.createdAt);
 
-              {message.message && (
-                <div
-                  className={`inline-block p-3 rounded-lg break-words ${
-                    isOwnMessage
-                      ? 'bg-blue-600 text-white rounded-br-none'
-                      : 'bg-muted text-foreground rounded-bl-none'
-                  }`}
-                >
-                  {message.message}
-                </div>
-              )}
+                  return (
+                    <div key={message.id}>
+                      {showDate && (
+                        <div className="text-center my-4">
+                          <span className="text-xs text-muted-foreground px-3 py-1 bg-muted rounded-full">
+                            {formatDate(message.createdAt)}
+                          </span>
+                        </div>
+                      )}
+                      
+                      <div className={`flex gap-3 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
+                        {!isOwnMessage && (
+                          <Avatar className="h-10 w-10">
+                            <AvatarFallback>{message.userAvatar}</AvatarFallback>
+                          </Avatar>
+                        )}
 
-              {message.image && (
-                <div className="relative group">
-                  <img
-                    src={message.image}
-                    alt="Uploaded content"
-                    className="max-w-sm rounded-lg cursor-pointer"
-                    onClick={() => setSelectedImage(message.image!)}
-                  />
-                  <Button
-                    size="icon"
-                    variant="secondary"
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => handleDownloadImage(message.image!, message.id)}
-                  >
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-            </div>
+                        <div className={`flex flex-col max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'}`}>
+                          <div className={`flex items-center gap-2 mb-1 ${isOwnMessage ? 'flex-row-reverse' : ''}`}>
+                            <span className="font-medium text-sm">{message.userName}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {formatTime(message.createdAt)}
+                            </span>
+                          </div>
 
-            {/* Avatar à direita apenas para mensagens próprias */}
-            {isOwnMessage && (
-              <Avatar className="h-10 w-10">
-                <AvatarFallback className="bg-blue-600 text-white">
-                  {message.avatar}
-                </AvatarFallback>
-              </Avatar>
+                          {message.content && (
+                            <div
+                              className={`inline-block p-3 rounded-lg break-words ${
+                                isOwnMessage
+                                  ? 'bg-blue-600 text-white rounded-br-none'
+                                  : 'bg-muted text-foreground rounded-bl-none'
+                              }`}
+                            >
+                              {message.content}
+                            </div>
+                          )}
+
+                          {message.imageUrl && (
+                            <div className="relative group">
+                              <img
+                                src={message.imageUrl}
+                                alt="Uploaded content"
+                                className="max-w-sm rounded-lg cursor-pointer"
+                                onClick={() => setSelectedImage(message.imageUrl!)}
+                              />
+                              <Button
+                                size="icon"
+                                variant="secondary"
+                                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => handleDownloadImage(message.imageUrl!, `imagem-${message.id}`)}
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+
+                        {isOwnMessage && (
+                          <Avatar className="h-10 w-10">
+                            <AvatarFallback className="bg-blue-600 text-white">
+                              {message.userAvatar}
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                <div ref={messagesEndRef} />
+              </>
             )}
           </div>
-        );
-      })}
-    </>
-  )}
-</div>
-
 
           {/* Message Input */}
           <div className="border-t p-4 bg-card">
@@ -369,6 +453,7 @@ const GroupChat = () => {
                 variant="outline"
                 size="icon"
                 onClick={() => fileInputRef.current?.click()}
+                disabled={sending}
               >
                 <Image className="h-5 w-5" />
               </Button>
@@ -377,10 +462,18 @@ const GroupChat = () => {
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
+                disabled={sending}
                 className="flex-1"
               />
-              <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
-                <Send className="h-5 w-5" />
+              <Button 
+                onClick={handleSendMessage} 
+                disabled={!newMessage.trim() || sending}
+              >
+                {sending ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Send className="h-5 w-5" />
+                )}
               </Button>
             </div>
           </div>
@@ -400,7 +493,7 @@ const GroupChat = () => {
               className="absolute top-2 right-2"
               onClick={(e) => {
                 e.stopPropagation();
-                handleDownloadImage(selectedImage, Date.now());
+                handleDownloadImage(selectedImage, `imagem-${Date.now()}`);
               }}
             >
               <Download className="h-4 w-4" />

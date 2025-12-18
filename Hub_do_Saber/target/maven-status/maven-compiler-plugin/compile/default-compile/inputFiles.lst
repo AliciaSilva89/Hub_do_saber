@@ -3,6 +3,7 @@ C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\c
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\auth\response\TokenResponse.java
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\auth\service\TokenService.java
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\config\AppUserDetails.java
+C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\config\CorsConfig.java
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\config\GlobalExceptionHandler.java
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\config\JpaUserDetailsService.java
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\config\SecurityConfiguration.java
@@ -17,6 +18,7 @@ C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\c
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\discipline\model\UserDisciplineInterest.java
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\discipline\repository\DisciplineRepository.java
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\discipline\repository\UserDisciplineInterestRepository.java
+C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\discipline\request\UpdateDisciplineRequest.java
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\discipline\service\DisciplineService.java
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\group\controller\GroupController.java
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\group\dto\StudyGroupDetailDTO.java
@@ -30,6 +32,12 @@ C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\c
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\group\request\UpdateGroupRequest.java
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\group\service\GroupService.java
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\HubDoSaberApplication.java
+C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\message\controller\MessageController.java
+C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\message\dto\MessageDTO.java
+C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\message\model\Message.java
+C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\message\repository\MessageRepository.java
+C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\message\request\CreateMessageRequest.java
+C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\message\service\MessageService.java
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\university\controller\UniversityController.java
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\university\dto\UniversityDTO.java
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\university\mapper\UniversityMapper.java
