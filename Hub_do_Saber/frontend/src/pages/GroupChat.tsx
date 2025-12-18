@@ -1,104 +1,112 @@
-import { useState, useRef } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Send, Settings, UserPlus, UserMinus, Lock, Image, Download, X } from "lucide-react";
+import { Send, Settings, Lock, Image, Download, X, Loader2, ArrowLeft } from "lucide-react";
+import { fetchGroupDetail } from "@/services/groupService";
+import { Badge } from "@/components/ui/badge";
+import axios from "axios";
 
 interface Message {
   id: number;
   user: string;
-  role?: string;
+  userName: string;
   message?: string;
   image?: string;
   time: string;
   avatar: string;
 }
 
+interface GroupInfo {
+  name: string;
+  avatar: string;
+  members: number;
+  disciplineName: string;
+}
+
+interface UserData {
+  id: string;
+  name: string;
+  email: string;
+}
+
 const GroupChat = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [newMessage, setNewMessage] = useState("");
-  const [selectedMember, setSelectedMember] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      user: "Oi gente 😁",
-      message: "Vamos começar?",
-      time: "19:30",
-      avatar: "👨"
-    },
-    {
-      id: 2,
-      user: "Jay",
-      role: "Engineering",
-      message: "Estava pensando: Vamos fazer pelo meet hoje?",
-      time: "19:31",
-      avatar: "👨‍💼"
-    },
-    {
-      id: 3,
-      user: "Audrey",
-      role: "Product",
-      message: "Alguém consegue me ajudar com essa questão?",
-      time: "19:32",
-      avatar: "👩"
-    },
-    {
-      id: 4,
-      user: "Audrey",
-      role: "Product", 
-      message: "Filosofia da Perdão na modernidade!",
-      time: "19:33",
-      avatar: "👩"
-    },
-    {
-      id: 5,
-      user: "Clara",
-      message: "Vou fazer um resumo para o grupo! https://meet.google.com/abc-wxyz-tuv",
-      time: "19:34",
-      avatar: "👩‍🦰"
-    },
-    {
-      id: 6,
-      user: "Janet",
-      role: "Engineering",
-      message: "Mundo doação pergunta para a gente te ajudar",
-      time: "19:35",
-      avatar: "👩‍💻"
-    },
-    {
-      id: 7,
-      user: "Janet",
-      role: "Product",
-      message: "Obrigada gente!",
-      time: "19:36",
-      avatar: "👩‍💻"
-    }
-  ]);
-
+  const [messages, setMessages] = useState<Message[]>([]); // ✅ Inicia vazio
+  const [loading, setLoading] = useState(true);
+  const [groupInfo, setGroupInfo] = useState<GroupInfo>({
+    name: "Carregando...",
+    avatar: "📚",
+    members: 0,
+    disciplineName: ""
+  });
+  const [userData, setUserData] = useState<UserData | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const groupInfo = {
-    name: "Grupo de Estudos - Filosofia",
-    avatar: "📚",
-    members: 4
-  };
+  // ✅ Carregar dados do grupo e do usuário ao montar o componente
+  useEffect(() => {
+    const loadData = async () => {
+      const token = localStorage.getItem("hubdosaber-token");
+      
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      if (!id) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+
+        // Buscar dados do usuário logado
+        const userResponse = await axios.get("http://localhost:8080/api/users/me", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setUserData(userResponse.data);
+
+        // Buscar dados do grupo
+        const groupData = await fetchGroupDetail(id);
+        setGroupInfo({
+          name: groupData.name,
+          avatar: "📚",
+          members: Array.isArray(groupData.members) ? groupData.members.length : 0,
+          disciplineName: groupData.disciplineName
+        });
+
+        // ✅ Aqui você pode buscar as mensagens do grupo do backend
+        // Por enquanto, inicia vazio
+        
+      } catch (error) {
+        console.error("❌ Erro ao carregar dados:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [id, navigate]);
 
   const handleSendMessage = () => {
-    if (newMessage.trim()) {
+    if (newMessage.trim() && userData) {
       const newMsg: Message = {
         id: messages.length + 1,
-        user: "Você",
+        user: userData.id,
+        userName: userData.name,
         message: newMessage,
         time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-        avatar: "👤"
+        avatar: userData.name.charAt(0).toUpperCase()
       };
       setMessages([...messages, newMsg]);
       setNewMessage("");
@@ -106,29 +114,32 @@ const GroupChat = () => {
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
       handleSendMessage();
     }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (file && userData) {
       const reader = new FileReader();
       reader.onloadend = () => {
         const newMsg: Message = {
           id: messages.length + 1,
-          user: "Você",
+          user: userData.id,
+          userName: userData.name,
           image: reader.result as string,
           time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-          avatar: "👤"
+          avatar: userData.name.charAt(0).toUpperCase()
         };
         setMessages([...messages, newMsg]);
       };
       reader.readAsDataURL(file);
-    }
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -141,18 +152,28 @@ const GroupChat = () => {
     document.body.removeChild(link);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="text-lg">Carregando chat...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="border-b bg-card px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-purple-500 to-orange-400 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">HS</span>
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold">HS</span>
             </div>
             <span className="font-semibold text-lg">Hub do Saber</span>
           </div>
-          
           <nav className="flex items-center gap-6">
             <Link to="/dashboard" className="text-muted-foreground hover:text-primary">
               Grupos
@@ -160,194 +181,183 @@ const GroupChat = () => {
             <Link to="/profile" className="text-muted-foreground hover:text-primary">
               Perfil
             </Link>
-            <Link to="/saiba" className="text-muted-foreground hover:text-primary">
-              Saiba
-            </Link>
-            <Link to="/create-group">
-              <Button className="bg-black hover:bg-black/90 text-white">
-                Criar Grupo
-              </Button>
-            </Link>
           </nav>
         </div>
       </header>
 
-      <div className="flex h-[calc(100vh-73px)]">
-        {/* Left Sidebar - Group Settings (Hidden by default) */}
+      <div className="flex-1 flex overflow-hidden max-w-7xl mx-auto w-full">
+        {/* Left Sidebar - Group Settings */}
         {showSettings && (
-          <div className="w-80 border-r bg-card p-6 space-y-6 overflow-y-auto">
-            {/* Group Info */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-100 via-purple-50 to-orange-50 rounded-lg flex items-center justify-center">
-                  <span className="text-2xl">{groupInfo.avatar}</span>
-                </div>
-                <div>
-                  <h2 className="font-semibold">{groupInfo.name}</h2>
-                  <p className="text-sm text-muted-foreground">
-                    filosofiaestudos@gmail.com
-                  </p>
-                </div>
+          <Card className="w-80 border-r rounded-none">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Configurações</span>
+                <Button variant="ghost" size="sm" onClick={() => setShowSettings(false)}>
+                  Fechar
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Group Info */}
+              <div className="text-center space-y-2">
+                <div className="text-5xl">{groupInfo.avatar}</div>
+                <h3 className="font-semibold">{groupInfo.name}</h3>
+                <p className="text-sm text-muted-foreground">{groupInfo.disciplineName}</p>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => setShowSettings(false)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
-                  Configurações
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label className="text-sm font-medium">Fechar</Label>
-                  <p className="text-xs text-muted-foreground mt-1">Alexa Rawles</p>
-                </div>
-
-                <div>
-                  <Label className="text-sm font-medium flex items-center gap-2">
-                    <UserPlus className="h-4 w-4" />
-                    Adicionar Membro
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-1">Marcus Mendez</p>
-                </div>
-
-                <div>
-                  <Label className="text-sm font-medium flex items-center gap-2">
-                    <UserMinus className="h-4 w-4" />
-                    Remover Membro
-                  </Label>
-                  <Select value={selectedMember} onValueChange={setSelectedMember}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Selecione..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="member1">Membro 1</SelectItem>
-                      <SelectItem value="member2">Membro 2</SelectItem>
-                      <SelectItem value="member3">Membro 3</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="private-group"
-                    checked={isPrivate}
-                    onCheckedChange={setIsPrivate}
-                  />
-                  <div className="grid gap-1.5 leading-none">
-                    <Label htmlFor="private-group" className="text-sm font-medium flex items-center gap-2">
+              {/* Privacy Settings */}
+              <div className="space-y-4 pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="flex items-center gap-2">
                       <Lock className="h-4 w-4" />
                       Privar Grupo
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Seu grupo não aparecerá para público, apenas para membros atuais
+                      Seu grupo não aparecerá para público
                     </p>
                   </div>
+                  <Switch checked={isPrivate} onCheckedChange={setIsPrivate} />
                 </div>
+              </div>
 
-                <Button variant="outline" size="sm" className="w-full">
-                  Editar
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+              <Button variant="outline" className="w-full">
+                Editar Informações
+              </Button>
+            </CardContent>
+          </Card>
         )}
 
         {/* Right Side - Chat */}
         <div className="flex-1 flex flex-col">
           {/* Chat Header */}
-          <div className="border-b p-4 bg-blue-50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+          <div className="border-b p-4 flex items-center justify-between bg-card">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate(`/group/${id}`)}
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Voltar
+              </Button>
+              <div className="flex items-center gap-2">
                 <div className="flex -space-x-2">
-                  <Avatar className="w-8 h-8 border-2 border-white">
-                    <AvatarFallback className="text-xs">👨</AvatarFallback>
+                  <Avatar className="h-8 w-8 border-2 border-background">
+                    <AvatarFallback>👨💼</AvatarFallback>
                   </Avatar>
-                  <Avatar className="w-8 h-8 border-2 border-white">
-                    <AvatarFallback className="text-xs">👩</AvatarFallback>
-                  </Avatar>
-                  <Avatar className="w-8 h-8 border-2 border-white">
-                    <AvatarFallback className="text-xs">👨‍💼</AvatarFallback>
-                  </Avatar>
-                  <Avatar className="w-8 h-8 border-2 border-white">
-                    <AvatarFallback className="text-xs">👩‍🦰</AvatarFallback>
+                  <Avatar className="h-8 w-8 border-2 border-background">
+                    <AvatarFallback>👩🦰</AvatarFallback>
                   </Avatar>
                 </div>
                 <div>
-                  <h3 className="font-semibold">{groupInfo.name}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    4 membros • 3 semanas atrás
+                  <h2 className="font-semibold">{groupInfo.name}</h2>
+                  <p className="text-xs text-muted-foreground">
+                    {groupInfo.members} {groupInfo.members === 1 ? 'membro' : 'membros'}
                   </p>
                 </div>
               </div>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => setShowSettings(!showSettings)}
-                className={showSettings ? "bg-accent" : ""}
-              >
-                <Settings className="h-5 w-5" />
-              </Button>
             </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowSettings(!showSettings)}
+              className={showSettings ? "bg-accent" : ""}
+            >
+              <Settings className="h-5 w-5" />
+            </Button>
           </div>
 
-          {/* Messages */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-4">
-            <div className="text-center text-xs text-muted-foreground">
-              03/09/2020
-            </div>
+        {/* Messages */}
+<div className="flex-1 overflow-y-auto p-6 space-y-4">
+  {messages.length === 0 ? (
+    <div className="flex flex-col items-center justify-center h-full text-center">
+      <div className="text-6xl mb-4">💬</div>
+      <h3 className="text-xl font-semibold mb-2">Nenhuma mensagem ainda</h3>
+      <p className="text-muted-foreground max-w-md">
+        Seja o primeiro a enviar uma mensagem para o grupo! Compartilhe suas ideias e comece a conversa.
+      </p>
+    </div>
+  ) : (
+    <>
+      <div className="text-center">
+        <span className="text-xs text-muted-foreground px-3 py-1 bg-muted rounded-full">
+          {new Date().toLocaleDateString('pt-BR')}
+        </span>
+      </div>
+      {messages.map((message) => {
+        const isOwnMessage = userData && message.user === userData.id;
+        
+        return (
+          <div
+            key={message.id}
+            className={`flex gap-3 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
+          >
+            {/* Avatar à esquerda apenas para mensagens de outros */}
+            {!isOwnMessage && (
+              <Avatar className="h-10 w-10">
+                <AvatarFallback>{message.avatar}</AvatarFallback>
+              </Avatar>
+            )}
 
-            {messages.map((message) => {
-              const isOwnMessage = message.user === "Você";
-              return (
-                <div key={message.id} className={`flex items-start gap-3 ${isOwnMessage ? 'flex-row-reverse' : ''}`}>
-                  <Avatar className="w-8 h-8">
-                    <AvatarFallback className="text-xs">{message.avatar}</AvatarFallback>
-                  </Avatar>
-                  <div className={`flex-1 ${isOwnMessage ? 'text-right' : ''}`}>
-                    <div className={`flex items-center gap-2 mb-1 ${isOwnMessage ? 'justify-end' : ''}`}>
-                      <span className="font-medium text-sm">{message.user}</span>
-                      {message.role && (
-                        <span className="text-xs text-muted-foreground">{message.role}</span>
-                      )}
-                      <span className="text-xs text-muted-foreground">{message.time}</span>
-                    </div>
-                    {message.message && (
-                      <p className={`text-sm inline-block px-3 py-2 rounded-lg ${isOwnMessage ? 'bg-blue-600 text-white' : 'bg-muted'}`}>
-                        {message.message}
-                      </p>
-                    )}
-                    {message.image && (
-                      <div className={`relative group mt-2 max-w-xs ${isOwnMessage ? 'ml-auto' : ''}`}>
-                        <img 
-                          src={message.image} 
-                          alt="Imagem enviada" 
-                          className="rounded-lg max-w-full h-auto cursor-pointer"
-                          onClick={() => setSelectedImage(message.image!)}
-                        />
-                        <Button
-                          variant="secondary"
-                          size="icon"
-                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => handleDownloadImage(message.image!, message.id)}
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
+            {/* Conteúdo da mensagem */}
+            <div className={`flex flex-col max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'}`}>
+              <div className={`flex items-center gap-2 mb-1 ${isOwnMessage ? 'flex-row-reverse' : ''}`}>
+                <span className="font-medium text-sm">{message.userName}</span>
+                <span className="text-xs text-muted-foreground">{message.time}</span>
+              </div>
+
+              {message.message && (
+                <div
+                  className={`inline-block p-3 rounded-lg break-words ${
+                    isOwnMessage
+                      ? 'bg-blue-600 text-white rounded-br-none'
+                      : 'bg-muted text-foreground rounded-bl-none'
+                  }`}
+                >
+                  {message.message}
                 </div>
-              );
-            })}
+              )}
+
+              {message.image && (
+                <div className="relative group">
+                  <img
+                    src={message.image}
+                    alt="Uploaded content"
+                    className="max-w-sm rounded-lg cursor-pointer"
+                    onClick={() => setSelectedImage(message.image!)}
+                  />
+                  <Button
+                    size="icon"
+                    variant="secondary"
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => handleDownloadImage(message.image!, message.id)}
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Avatar à direita apenas para mensagens próprias */}
+            {isOwnMessage && (
+              <Avatar className="h-10 w-10">
+                <AvatarFallback className="bg-blue-600 text-white">
+                  {message.avatar}
+                </AvatarFallback>
+              </Avatar>
+            )}
           </div>
+        );
+      })}
+    </>
+  )}
+</div>
+
 
           {/* Message Input */}
-          <div className="border-t p-4">
-            <div className="flex items-center gap-2">
+          <div className="border-t p-4 bg-card">
+            <div className="flex gap-2 max-w-4xl mx-auto">
               <input
                 type="file"
                 ref={fileInputRef}
@@ -356,7 +366,7 @@ const GroupChat = () => {
                 className="hidden"
               />
               <Button
-                variant="ghost"
+                variant="outline"
                 size="icon"
                 onClick={() => fileInputRef.current?.click()}
               >
@@ -369,12 +379,8 @@ const GroupChat = () => {
                 onKeyPress={handleKeyPress}
                 className="flex-1"
               />
-              <Button 
-                onClick={handleSendMessage}
-                size="icon"
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <Send className="h-4 w-4" />
+              <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
+                <Send className="h-5 w-5" />
               </Button>
             </div>
           </div>
@@ -383,20 +389,15 @@ const GroupChat = () => {
 
       {/* Image Preview Modal */}
       {selectedImage && (
-        <div 
-          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
           onClick={() => setSelectedImage(null)}
         >
           <div className="relative max-w-4xl max-h-[90vh]">
-            <img 
-              src={selectedImage} 
-              alt="Preview" 
-              className="max-w-full max-h-[90vh] object-contain"
-            />
             <Button
-              variant="secondary"
               size="icon"
-              className="absolute top-4 right-4"
+              variant="secondary"
+              className="absolute top-2 right-2"
               onClick={(e) => {
                 e.stopPropagation();
                 handleDownloadImage(selectedImage, Date.now());
@@ -405,13 +406,19 @@ const GroupChat = () => {
               <Download className="h-4 w-4" />
             </Button>
             <Button
-              variant="secondary"
               size="icon"
-              className="absolute top-4 left-4"
+              variant="secondary"
+              className="absolute top-2 left-2"
               onClick={() => setSelectedImage(null)}
             >
               <X className="h-4 w-4" />
             </Button>
+            <img
+              src={selectedImage}
+              alt="Preview"
+              className="max-w-full max-h-[90vh] object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
           </div>
         </div>
       )}
