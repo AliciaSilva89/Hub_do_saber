@@ -16,6 +16,8 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import axios from "axios";
+import {  CalendarIcon,  Plus,  Video,  Trash2, Save, Edit3,GraduationCap,BookOpen} from "lucide-react";
+
 
 interface Group {
   id: string;
@@ -332,9 +334,9 @@ const Profile = () => {
                         />
                       </div>
                     </div>
-                    <DialogFooter>
-                      <Button type="submit" onClick={handleAddEvent}>Adicionar Evento</Button>
-                    </DialogFooter>
+                   <div className="flex justify-end gap-2 mt-4">
+                    <Button type="submit" onClick={handleAddEvent}>Adicionar Evento</Button>
+                   </div>
                   </DialogContent>
                 </Dialog>
               </CardHeader>
