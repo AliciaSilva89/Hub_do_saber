@@ -5,18 +5,18 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, Users, Clock, MapPin, Loader2 } from "lucide-react";
-import { fetchAllGroups, Group } from "@/services/groupService";
-
+import { fetchAllGroups, fetchMyGroups, Group } from "@/services/groupService";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("");
-  const [groups, setGroups] = useState<Group[]>([]);
+  const [allGroups, setAllGroups] = useState<Group[]>([]);
+  const [myGroups, setMyGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("all");
 
-  // ✅ Carregar grupos do banco de dados
   useEffect(() => {
     const loadGroups = async () => {
       const token = localStorage.getItem("hubdosaber-token");
@@ -29,13 +29,23 @@ const Dashboard = () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await fetchAllGroups();
-        setGroups(data);
+        
+        const [allGroupsData, myGroupsData] = await Promise.all([
+          fetchAllGroups(),
+          fetchMyGroups()
+        ]);
+        
+        setAllGroups(allGroupsData);
+        setMyGroups(myGroupsData);
+        
+        console.log("✅ Grupos carregados:", {
+          total: allGroupsData.length,
+          meus: myGroupsData.length
+        });
       } catch (err: any) {
-        console.error("Erro ao carregar grupos:", err);
+        console.error("❌ Erro ao carregar grupos:", err);
         setError(err.message || "Erro ao carregar grupos");
         
-        // Se for erro de autenticação, redireciona para login
         if (err.message?.includes("login")) {
           setTimeout(() => navigate("/login"), 2000);
         }
@@ -47,13 +57,13 @@ const Dashboard = () => {
     loadGroups();
   }, [navigate]);
 
-  // ✅ Extrair disciplinas únicas dos grupos carregados
+  const displayGroups = activeTab === "my" ? myGroups : allGroups;
+
   const subjects = Array.from(
-    new Set(groups.map(group => group.disciplineName).filter(Boolean))
+    new Set(displayGroups.map(group => group.disciplineName).filter(Boolean))
   ).sort();
 
-  // ✅ Filtrar grupos baseado na busca e disciplina selecionada
-  const filteredGroups = groups.filter(group => {
+  const filteredGroups = displayGroups.filter(group => {
     const matchesSearch = 
       group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       group.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -63,7 +73,6 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b bg-card px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
@@ -82,7 +91,6 @@ const Dashboard = () => {
         </div>
       </header>
 
-      {/* Hero Section */}
       <section className="bg-gradient-to-br from-blue-50 to-purple-50 py-16 px-6">
         <div className="max-w-7xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Encontre seu grupo!</h1>
@@ -95,9 +103,36 @@ const Dashboard = () => {
         </div>
       </section>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-12">
-        {/* Search Bar */}
+        <div className="flex gap-3 mb-8 justify-center">
+          <Button
+            variant={activeTab === "all" ? "default" : "outline"}
+            onClick={() => setActiveTab("all")}
+            className="min-w-[200px] h-12"
+            size="lg"
+          >
+            <span className="flex items-center gap-2">
+              Todos os Grupos
+              <Badge variant={activeTab === "all" ? "secondary" : "outline"}>
+                {allGroups.length}
+              </Badge>
+            </span>
+          </Button>
+          <Button
+            variant={activeTab === "my" ? "default" : "outline"}
+            onClick={() => setActiveTab("my")}
+            className="min-w-[200px] h-12"
+            size="lg"
+          >
+            <span className="flex items-center gap-2">
+              Meus Grupos
+              <Badge variant={activeTab === "my" ? "secondary" : "outline"}>
+                {myGroups.length}
+              </Badge>
+            </span>
+          </Button>
+        </div>
+
         <div className="flex flex-col md:flex-row gap-4 mb-8">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
@@ -122,7 +157,6 @@ const Dashboard = () => {
           </select>
         </div>
 
-        {/* Loading State */}
         {loading && (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -130,7 +164,6 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Error State */}
         {error && !loading && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
             <p className="font-semibold">Erro ao carregar grupos</p>
@@ -138,22 +171,30 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Groups Grid */}
         {!loading && !error && (
           <>
             {filteredGroups.length === 0 ? (
               <Card className="p-12 text-center border-dashed border-2">
+                <div className="text-6xl mb-4">
+                  {activeTab === "my" ? "📚" : "🔍"}
+                </div>
                 <p className="text-xl text-muted-foreground mb-4">
-                  Nenhum grupo encontrado com os filtros aplicados.
+                  {activeTab === "my" 
+                    ? "Você ainda não participa de nenhum grupo."
+                    : "Nenhum grupo encontrado com os filtros aplicados."}
                 </p>
                 <Button
                   onClick={() => {
-                    setSearchTerm("");
-                    setSelectedSubject("");
+                    if (activeTab === "my") {
+                      setActiveTab("all");
+                    } else {
+                      setSearchTerm("");
+                      setSelectedSubject("");
+                    }
                   }}
                   variant="outline"
                 >
-                  Limpar filtros
+                  {activeTab === "my" ? "Explorar todos os grupos" : "Limpar filtros"}
                 </Button>
               </Card>
             ) : (

@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
+import { fetchMyGroups } from "@/services/groupService";
+
 import { 
   Dialog, 
   DialogContent, 
@@ -98,40 +100,43 @@ const Profile = () => {
   const getEventsForDate = (date: Date) => 
     events.filter(e => e.date.toDateString() === date.toDateString());
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const token = localStorage.getItem("hubdosaber-token");
-      const headers = { Authorization: `Bearer ${token}` };
+ useEffect(() => {
+  const fetchData = async () => {
+    const token = localStorage.getItem("hubdosaber-token");
+    const headers = { Authorization: `Bearer ${token}` };
+    
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      // Buscar dados do perfil
+      const profileRes = await axios.get("http://localhost:8080/api/users/me", { headers });
+      const profileData = profileRes.data;
       
-      if (!token) {
-        navigate("/login");
-        return;
-      }
+      setUserData({
+        name: profileData.name || "Usuário",
+        email: profileData.email || "sem email",
+        matriculation: profileData.matriculation || "---",
+        courseName: profileData.course?.name || profileData.courseName || "---",
+      });
 
-      try {
-        const profileRes = await axios.get("http://localhost:8080/api/users/me", { headers });
-        const profileData = profileRes.data;
-        
-        setUserData({
-          name: profileData.name || "Usuário",
-          email: profileData.email || "sem email",
-          matriculation: profileData.matriculation || "---",
-          courseName: profileData.course?.name || profileData.courseName || "---",
-        });
+      // ✅ Buscar TODOS os grupos que o usuário participa (não só os criados)
+      const myGroupsData = await fetchMyGroups();
+      setMyGroups(myGroupsData);
 
-        const groupsRes = await axios.get("http://localhost:3000/bff/group", { headers });
-        setMyGroups(groupsRes.data);
+    } catch (error) {
+      console.error("Erro ao carregar dados:", error);
+    } finally {
+      setLoadingGroups(false);
+      setLoadingProfile(false);
+    }
+  };
 
-      } catch (error) {
-        console.error("Erro ao carregar dados:", error);
-      } finally {
-        setLoadingGroups(false);
-        setLoadingProfile(false);
-      }
-    };
+  fetchData();
+}, [navigate]);
 
-    fetchData();
-  }, [navigate]);
 
   const handleSaveProfile = async () => {
     const token = localStorage.getItem("hubdosaber-token");
