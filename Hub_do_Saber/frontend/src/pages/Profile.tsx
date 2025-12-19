@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { fetchMyGroups } from "@/services/groupService";
-import { getUserProfile, uploadProfilePicture, UserProfile } from "@/services/userService";
+import { getUserProfile, uploadProfilePicture } from "@/services/userService";
 
 import { 
   Dialog, 
@@ -36,7 +36,6 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import axios from "axios";
-import { jwtDecode } from "jwt-decode";
 
 interface Group {
   id: string;
@@ -92,20 +91,6 @@ const Profile = () => {
     profilePicture: undefined,
   });
 
-  // ✅ Obter ID do usuário do token
-  const getUserIdFromToken = (): string | null => {
-    const token = localStorage.getItem("hubdosaber-token");
-    if (!token) return null;
-
-    try {
-      const decoded: any = jwtDecode(token);
-      return decoded.sub;
-    } catch (error) {
-      console.error("Erro ao decodificar token:", error);
-      return null;
-    }
-  };
-
   const handleAddEvent = () => {
     if (!newEvent.title || !newEvent.time) return;
     setEvents(prev => [...prev, { ...newEvent, id: Date.now().toString() }]);
@@ -120,17 +105,15 @@ const Profile = () => {
   const getEventsForDate = (date: Date) => 
     events.filter(e => e.date.toDateString() === date.toDateString());
 
-  // ✅ Handler para upload de foto
+  // ✅ Handler para upload de foto (ÚNICA DECLARAÇÃO)
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const userId = getUserIdFromToken();
-    if (!userId) return;
-
     try {
       setUploadingPhoto(true);
-      const newProfilePicture = await uploadProfilePicture(userId, file);
+      // Não precisa mais passar userId
+      const newProfilePicture = await uploadProfilePicture(file);
       
       // Atualizar estado local
       setUserData((prev) => ({ ...prev, profilePicture: newProfilePicture }));
@@ -155,22 +138,15 @@ const Profile = () => {
   useEffect(() => {
     const fetchData = async () => {
       const token = localStorage.getItem("hubdosaber-token");
-      const headers = { Authorization: `Bearer ${token}` };
       
       if (!token) {
         navigate("/login");
         return;
       }
 
-      const userId = getUserIdFromToken();
-      if (!userId) {
-        navigate("/login");
-        return;
-      }
-
       try {
-        // ✅ Buscar dados do perfil usando o novo serviço
-        const profileData = await getUserProfile(userId);
+        // ✅ Buscar dados do perfil (não precisa passar userId)
+        const profileData = await getUserProfile();
         
         setUserData({
           id: profileData.id,

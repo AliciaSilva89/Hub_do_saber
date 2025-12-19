@@ -65,6 +65,15 @@ public class UserService {
 
     @Transactional
     public UserDTO updateUser(UUID id, UpdateUserRequest request) {
+        System.out.println("========== UPDATE USER ==========");
+        System.out.println("📥 Request recebido para user ID: " + id);
+        System.out.println("📋 Nome: " + request.getName());
+        System.out.println("📧 Email: " + request.getEmail());
+        System.out.println("🎫 Matrícula: " + request.getMatriculation());
+        System.out.println("🖼️ ProfilePicture: "
+                + (request.getProfilePicture() != null ? "SIM (" + request.getProfilePicture().length() + " caracteres)"
+                        : "NULL"));
+
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + id));
 
@@ -83,12 +92,21 @@ public class UserService {
             user.setMatriculation(request.getMatriculation());
         }
 
-        // ✅ CORRIGIDO: Verificar se profilePicture existe no request
         if (request.getProfilePicture() != null) {
+            System.out.println("✅ Setando profilePicture no usuário...");
             user.setProfilePicture(request.getProfilePicture());
+        } else {
+            System.out.println("⚠️ ProfilePicture é NULL, não será atualizado");
         }
 
         User updatedUser = userRepository.save(user);
+
+        System.out.println("💾 Usuário salvo!");
+        System.out.println("🖼️ ProfilePicture salvo: " +
+                (updatedUser.getProfilePicture() != null ? updatedUser.getProfilePicture().length() + " caracteres"
+                        : "NULL"));
+        System.out.println("==================================");
+
         return userMapper.toDTO(updatedUser);
     }
 

@@ -1,3 +1,4 @@
+// src/services/userService.ts
 import axiosInstance from "./axiosConfig";
 
 export interface UserProfile {
@@ -17,9 +18,10 @@ export interface UserProfile {
   profilePicture?: string;
 }
 
-export const getUserProfile = async (userId: string): Promise<UserProfile> => {
+// ✅ Buscar perfil do usuário atual
+export const getUserProfile = async (): Promise<UserProfile> => {
   try {
-    const response = await axiosInstance.get(`/users/${userId}`);
+    const response = await axiosInstance.get("/users/me");
     console.log("✅ Perfil do usuário carregado:", response.data);
     return response.data;
   } catch (error: any) {
@@ -28,12 +30,12 @@ export const getUserProfile = async (userId: string): Promise<UserProfile> => {
   }
 };
 
+// ✅ Atualizar perfil do usuário atual
 export const updateUserProfile = async (
-  userId: string,
   data: Partial<UserProfile>
 ): Promise<UserProfile> => {
   try {
-    const response = await axiosInstance.put(`/users/${userId}`, data);
+    const response = await axiosInstance.put("/users/me", data);
     console.log("✅ Perfil atualizado:", response.data);
     return response.data;
   } catch (error: any) {
@@ -44,18 +46,22 @@ export const updateUserProfile = async (
   }
 };
 
-export const uploadProfilePicture = async (
-  userId: string,
-  file: File
-): Promise<string> => {
+// ✅ Upload de foto de perfil (APENAS UMA DECLARAÇÃO)
+export const uploadProfilePicture = async (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
-    // Validar tipo de arquivo
+    console.log(
+      "📂 Arquivo selecionado:",
+      file.name,
+      "Tamanho:",
+      file.size,
+      "bytes"
+    );
+
     if (!file.type.startsWith("image/")) {
       reject(new Error("Por favor, selecione apenas arquivos de imagem"));
       return;
     }
 
-    // Validar tamanho (máximo 5MB)
     if (file.size > 5 * 1024 * 1024) {
       reject(new Error("A imagem deve ter no máximo 5MB"));
       return;
@@ -67,14 +73,28 @@ export const uploadProfilePicture = async (
       try {
         const base64String = reader.result as string;
 
-        // Atualizar perfil com a imagem em base64
-        const response = await updateUserProfile(userId, {
+        console.log("📤 Base64 gerado com sucesso!");
+        console.log("📏 Tamanho do Base64:", base64String.length, "caracteres");
+        console.log(
+          "🔍 Primeiros 100 caracteres:",
+          base64String.substring(0, 100)
+        );
+
+        const response = await updateUserProfile({
           profilePicture: base64String,
         });
 
-        console.log("✅ Foto de perfil enviada com sucesso");
+        console.log("✅ Resposta do servidor:", response);
+        console.log(
+          "🖼️ ProfilePicture retornado:",
+          response.profilePicture
+            ? `SIM (${response.profilePicture.length} caracteres)`
+            : "NULL"
+        );
+
         resolve(response.profilePicture || "");
       } catch (error) {
+        console.error("❌ Erro ao enviar foto:", error);
         reject(error);
       }
     };
@@ -83,7 +103,6 @@ export const uploadProfilePicture = async (
       reject(new Error("Erro ao ler o arquivo"));
     };
 
-    // Converter para Base64
     reader.readAsDataURL(file);
   });
 };
