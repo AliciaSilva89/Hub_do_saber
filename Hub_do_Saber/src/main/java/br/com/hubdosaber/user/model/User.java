@@ -40,11 +40,13 @@ public class User {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
-    // ✅ ADICIONE ESTE RELACIONAMENTO
+
+    @Column(name = "profile_picture", columnDefinition = "TEXT")
+    private String profilePicture;
+
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserDisciplineInterest> disciplineInterests = new ArrayList<>();
 
-    // Método getter para isActive
     public Boolean isActive() {
         return isActive != null && isActive;
     }

@@ -1,15 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { fetchMyGroups } from "@/services/groupService";
+import { getUserProfile, uploadProfilePicture, UserProfile } from "@/services/userService";
 
 import { 
   Dialog, 
@@ -17,7 +17,6 @@ import {
   DialogHeader, 
   DialogTitle, 
   DialogTrigger,
-  DialogFooter  
 } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { 
@@ -29,12 +28,15 @@ import {
   Clock, 
   Video,
   GraduationCap,
-  BookOpen  // ✅ CONSOLIDADO EM UMA ÚNICA IMPORTAÇÃO
+  BookOpen,
+  Camera,
+  Loader2
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 
 interface Group {
   id: string;
@@ -48,6 +50,7 @@ interface UserData {
   email: string;
   matriculation: string;
   courseName: string;
+  profilePicture?: string;
 }
 
 interface CalendarEvent {
@@ -61,10 +64,12 @@ interface CalendarEvent {
 
 const Profile = () => {
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [myGroups, setMyGroups] = useState<Group[]>([]);
   const [loadingGroups, setLoadingGroups] = useState(true);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   
   const [events, setEvents] = useState<CalendarEvent[]>([
     { id: "1", title: "Aula de Programação", type: "aula", date: new Date(), time: "19:00" }
@@ -84,7 +89,22 @@ const Profile = () => {
     email: "carregando...",
     matriculation: "---",
     courseName: "---",
+    profilePicture: undefined,
   });
+
+  // ✅ Obter ID do usuário do token
+  const getUserIdFromToken = (): string | null => {
+    const token = localStorage.getItem("hubdosaber-token");
+    if (!token) return null;
+
+    try {
+      const decoded: any = jwtDecode(token);
+      return decoded.sub;
+    } catch (error) {
+      console.error("Erro ao decodificar token:", error);
+      return null;
+    }
+  };
 
   const handleAddEvent = () => {
     if (!newEvent.title || !newEvent.time) return;
@@ -100,43 +120,81 @@ const Profile = () => {
   const getEventsForDate = (date: Date) => 
     events.filter(e => e.date.toDateString() === date.toDateString());
 
- useEffect(() => {
-  const fetchData = async () => {
-    const token = localStorage.getItem("hubdosaber-token");
-    const headers = { Authorization: `Bearer ${token}` };
-    
-    if (!token) {
-      navigate("/login");
-      return;
-    }
+  // ✅ Handler para upload de foto
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const userId = getUserIdFromToken();
+    if (!userId) return;
 
     try {
-      // Buscar dados do perfil
-      const profileRes = await axios.get("http://localhost:8080/api/users/me", { headers });
-      const profileData = profileRes.data;
+      setUploadingPhoto(true);
+      const newProfilePicture = await uploadProfilePicture(userId, file);
       
-      setUserData({
-        name: profileData.name || "Usuário",
-        email: profileData.email || "sem email",
-        matriculation: profileData.matriculation || "---",
-        courseName: profileData.course?.name || profileData.courseName || "---",
-      });
-
-      // ✅ Buscar TODOS os grupos que o usuário participa (não só os criados)
-      const myGroupsData = await fetchMyGroups();
-      setMyGroups(myGroupsData);
-
-    } catch (error) {
-      console.error("Erro ao carregar dados:", error);
+      // Atualizar estado local
+      setUserData((prev) => ({ ...prev, profilePicture: newProfilePicture }));
+      
+      console.log("✅ Foto de perfil atualizada com sucesso");
+    } catch (err: any) {
+      console.error("❌ Erro ao fazer upload da foto:", err);
+      alert(err.message || "Erro ao atualizar foto de perfil. Tente novamente.");
     } finally {
-      setLoadingGroups(false);
-      setLoadingProfile(false);
+      setUploadingPhoto(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
-  fetchData();
-}, [navigate]);
+  // Trigger do input de arquivo
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
 
+  useEffect(() => {
+    const fetchData = async () => {
+      const token = localStorage.getItem("hubdosaber-token");
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      const userId = getUserIdFromToken();
+      if (!userId) {
+        navigate("/login");
+        return;
+      }
+
+      try {
+        // ✅ Buscar dados do perfil usando o novo serviço
+        const profileData = await getUserProfile(userId);
+        
+        setUserData({
+          id: profileData.id,
+          name: profileData.name || "Usuário",
+          email: profileData.email || "sem email",
+          matriculation: profileData.matriculation || "---",
+          courseName: profileData.course?.name || "---",
+          profilePicture: profileData.profilePicture,
+        });
+
+        // Buscar grupos do usuário
+        const myGroupsData = await fetchMyGroups();
+        setMyGroups(myGroupsData);
+
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
+      } finally {
+        setLoadingGroups(false);
+        setLoadingProfile(false);
+      }
+    };
+
+    fetchData();
+  }, [navigate]);
 
   const handleSaveProfile = async () => {
     const token = localStorage.getItem("hubdosaber-token");
@@ -157,10 +215,20 @@ const Profile = () => {
     setUserData(prev => ({ ...prev, [field]: value }));
   };
 
+  // ✅ Função para obter iniciais do nome
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
   if (loadingProfile) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-lg">Carregando perfil...</div>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -184,10 +252,43 @@ const Profile = () => {
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-8">
+        {/* ✅ Avatar com botão de upload de foto */}
         <div className="flex items-center gap-4 mb-8">
-          <Avatar className="w-20 h-20">
-            <AvatarFallback>{userData.name.charAt(0).toUpperCase()}</AvatarFallback>
-          </Avatar>
+          <div className="relative">
+            <Avatar className="w-20 h-20 border-4 border-primary/20">
+              <AvatarImage 
+                src={userData.profilePicture || undefined} 
+                alt={userData.name} 
+              />
+              <AvatarFallback className="text-2xl bg-gradient-to-br from-blue-500 to-purple-500 text-white">
+                {getInitials(userData.name)}
+              </AvatarFallback>
+            </Avatar>
+            
+            {/* Botão de câmera para upload */}
+            <button
+              onClick={triggerFileInput}
+              disabled={uploadingPhoto}
+              className="absolute bottom-0 right-0 bg-primary text-white p-1.5 rounded-full hover:bg-primary/90 transition-colors disabled:opacity-50 shadow-lg"
+              title="Alterar foto de perfil"
+            >
+              {uploadingPhoto ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Camera className="h-4 w-4" />
+              )}
+            </button>
+            
+            {/* Input file oculto */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoUpload}
+              className="hidden"
+            />
+          </div>
+          
           <div>
             <h1 className="text-2xl font-bold">{userData.name}</h1>
             <p className="text-muted-foreground">{userData.email}</p>
@@ -250,7 +351,10 @@ const Profile = () => {
             <div>
               <h2 className="text-2xl font-bold mb-6">Meus grupos</h2>
               {loadingGroups ? (
-                <p>Carregando grupos...</p>
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <p>Carregando grupos...</p>
+                </div>
               ) : myGroups.length === 0 ? (
                 <Card className="p-12 text-center border-dashed border-2">
                   <p className="text-muted-foreground mb-4">Você ainda não tem grupos.</p>
@@ -348,9 +452,9 @@ const Profile = () => {
                         />
                       </div>
                     </div>
-                   <div className="flex justify-end gap-2 mt-4">
-                    <Button type="submit" onClick={handleAddEvent}>Adicionar Evento</Button>
-                   </div>
+                    <div className="flex justify-end gap-2 mt-4">
+                      <Button type="submit" onClick={handleAddEvent}>Adicionar Evento</Button>
+                    </div>
                   </DialogContent>
                 </Dialog>
               </CardHeader>
@@ -374,7 +478,7 @@ const Profile = () => {
                           {event.type === "aula" && <BookOpen className="h-4 w-4" />}
                           {event.type === "trabalho" && <GraduationCap className="h-4 w-4" />}
                           {event.type === "reuniao" && <Video className="h-4 w-4" />}
-                          <span>{event.title} <span className="text-sm text-muted-foreground">({event.time})</span></span>
+                          <span className="text-sm">{event.title} <span className="text-xs text-muted-foreground">({event.time})</span></span>
                         </div>
                         <Button 
                           size="sm" 

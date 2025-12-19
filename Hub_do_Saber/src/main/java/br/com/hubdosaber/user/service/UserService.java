@@ -80,8 +80,12 @@ public class UserService {
         }
 
         if (request.getMatriculation() != null && !request.getMatriculation().equals(user.getMatriculation())) {
-        
             user.setMatriculation(request.getMatriculation());
+        }
+
+        // ✅ CORRIGIDO: Verificar se profilePicture existe no request
+        if (request.getProfilePicture() != null) {
+            user.setProfilePicture(request.getProfilePicture());
         }
 
         User updatedUser = userRepository.save(user);

@@ -15,6 +15,9 @@ public class UserMapper {
         dto.setName(user.getName());
         dto.setEmail(user.getEmail());
 
+        // ✅ ADICIONAR: Mapear foto de perfil
+        dto.setProfilePicture(user.getProfilePicture());
+
         if (user.getCourse() != null) {
             UserDTO.CourseDTO courseDTO = new UserDTO.CourseDTO();
             courseDTO.setId(user.getCourse().getId());

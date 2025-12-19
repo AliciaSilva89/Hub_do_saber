@@ -18,6 +18,7 @@ public class UserDTO {
     private String email;
     private CourseDTO course;
     private List<DisciplineDTO> disciplineInterests;
+    private String profilePicture;
 
     @Getter
     @Setter

@@ -9,7 +9,6 @@ import axios from "axios";
 const Login = () => {
     const navigate = useNavigate(); 
     const [showPassword, setShowPassword] = useState(false);
-    // Mudamos o nome da variável para 'email'
     const [email, setEmail] = useState(""); 
     const [senha, setSenha] = useState("");
     const [error, setError] = useState("");
@@ -19,7 +18,6 @@ const Login = () => {
         e.preventDefault();
         setError(""); 
         
-        // Verificação agora usa a variável 'email'
         if (!email || !senha) {
             setError("Por favor, preencha todos os campos.");
             return;
@@ -31,21 +29,39 @@ const Login = () => {
             const apiUrl = "http://localhost:8080/auth/login"; 
             
             const response = await axios.post(apiUrl, {
-                // O nome do campo agora é 'email', correspondendo ao back-end
                 email: email,
                 password: senha
             });
 
             if (response.status === 200) {
-                const token = response.data.access_token; // Acessar o campo `access_token`
+                // ✅ CORREÇÃO: O campo correto é 'access_token'
+                const token = response.data.access_token;
+                
+                // ✅ Log para debug
+                console.log("Token recebido:", token);
+                
+                if (!token) {
+                    setError("Token não recebido do servidor.");
+                    return;
+                }
+                
                 localStorage.setItem("hubdosaber-token", token);
                 console.log("Login bem-sucedido!");
-                navigate("/dashboard");
+                
+                // ✅ Pequeno delay para garantir que o token foi salvo
+                setTimeout(() => {
+                    navigate("/dashboard");
+                }, 100);
             }
         } catch (err) {
             console.error("Erro no login:", err);
-            if (axios.isAxiosError(err) && err.response && err.response.status === 401) {
-                setError("Email ou senha inválidos.");
+            if (axios.isAxiosError(err) && err.response) {
+                console.error("Resposta do erro:", err.response.data);
+                if (err.response.status === 401) {
+                    setError("Email ou senha inválidos.");
+                } else {
+                    setError("Ocorreu um erro. Tente novamente.");
+                }
             } else {
                 setError("Ocorreu um erro. Tente novamente.");
             }
@@ -65,20 +81,18 @@ const Login = () => {
                 </h1>
                 {error && <p className="text-red-500 text-center mb-4">{error}</p>}
                 <form onSubmit={handleLogin} className="space-y-6">
-                    {/* O campo agora é de email */}
                     <div className="relative">
                         <Label htmlFor="email" className="sr-only">E-mail</Label>
                         <div className="relative">
                             <Input
                                 id="email"
-                                type="email" // Mudei o tipo para 'email' para validação nativa
+                                type="email"
                                 placeholder="E-mail"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="pr-10"
                                 required
                             />
-                            {/* O ícone de usuário pode ser mantido ou trocado por um de e-mail */}
                             <User className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         </div>
                     </div>
@@ -103,7 +117,11 @@ const Login = () => {
                             </button>
                         </div>
                     </div>
-                    <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 rounded-full" disabled={loading}>
+                    <Button 
+                        type="submit" 
+                        className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 rounded-full" 
+                        disabled={loading}
+                    >
                         {loading ? "ENTRANDO..." : "LOGIN"}
                     </Button>
                     <p className="text-center text-sm text-muted-foreground">

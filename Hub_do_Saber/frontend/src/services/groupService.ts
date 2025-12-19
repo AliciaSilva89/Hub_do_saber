@@ -1,13 +1,11 @@
-import axios from "axios";
-
-const API_URL = "http://localhost:8080/api";
+import axiosInstance from "./axiosConfig";
 
 export interface Group {
   id: string;
   name: string;
   description: string;
   maxMembers: number;
-  monitoring: boolean; // ✅ Propriedade de monitoria
+  monitoring: boolean;
   active: boolean;
   disciplineId: string;
   disciplineName: string;
@@ -32,137 +30,84 @@ export interface GroupDetail extends Group {
   members: GroupMember[];
 }
 
-// Buscar todos os grupos
+// ✅ CORRIGIDO: Buscar todos os grupos
 export const fetchAllGroups = async (): Promise<Group[]> => {
-  const token = localStorage.getItem("hubdosaber-token");
-
-  if (!token) {
-    throw new Error("Token não encontrado. Faça login novamente.");
-  }
-
   try {
-    const response = await axios.get(`${API_URL}/groups`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    // axiosInstance já tem /api no baseURL, então use apenas /group
+    const response = await axiosInstance.get("/group");
+    console.log("✅ Grupos carregados:", response.data);
     return response.data;
   } catch (error: any) {
-    console.error("Erro ao buscar grupos:", error);
-    if (error.response?.status === 401) {
-      throw new Error("Sessão expirada. Faça login novamente.");
-    }
+    console.error("❌ Erro ao buscar grupos:", error);
+    console.error("Status:", error.response?.status);
+    console.error("URL:", error.config?.url);
     throw new Error(error.response?.data?.message || "Erro ao carregar grupos");
   }
 };
 
-// Buscar grupos do usuário logado
+// ✅ CORRIGIDO: Buscar grupos do usuário logado
 export const fetchMyGroups = async (): Promise<Group[]> => {
-  const token = localStorage.getItem("hubdosaber-token");
-
-  if (!token) {
-    throw new Error("Token não encontrado. Faça login novamente.");
-  }
-
   try {
-    const response = await axios.get(`${API_URL}/groups/my-groups`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+    // Use o parâmetro mygroup=true conforme o GroupController
+    const response = await axiosInstance.get("/group", {
+      params: { mygroup: true },
     });
+    console.log("✅ Meus grupos carregados:", response.data);
     return response.data;
   } catch (error: any) {
-    console.error("Erro ao buscar meus grupos:", error);
-    if (error.response?.status === 401) {
-      throw new Error("Sessão expirada. Faça login novamente.");
-    }
+    console.error("❌ Erro ao buscar meus grupos:", error);
+    console.error("Status:", error.response?.status);
+    console.error("URL:", error.config?.url);
     throw new Error(
       error.response?.data?.message || "Erro ao carregar seus grupos"
     );
   }
 };
 
-// Buscar detalhes de um grupo específico
+// ✅ CORRIGIDO: Buscar detalhes de um grupo específico
 export const fetchGroupDetail = async (
   groupId: string
 ): Promise<GroupDetail> => {
-  const token = localStorage.getItem("hubdosaber-token");
-
-  if (!token) {
-    throw new Error("Token não encontrado. Faça login novamente.");
-  }
-
   try {
-    const response = await axios.get(`${API_URL}/groups/${groupId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await axiosInstance.get(`/group/${groupId}`);
+    console.log("✅ Detalhes do grupo carregados:", response.data);
     return response.data;
   } catch (error: any) {
-    console.error("Erro ao buscar detalhes do grupo:", error);
-    if (error.response?.status === 401) {
-      throw new Error("Sessão expirada. Faça login novamente.");
-    }
+    console.error("❌ Erro ao buscar detalhes do grupo:", error);
     throw new Error(
       error.response?.data?.message || "Erro ao carregar detalhes do grupo"
     );
   }
 };
 
-// Entrar em um grupo
+// ✅ CORRIGIDO: Entrar em um grupo
 export const joinGroup = async (groupId: string): Promise<void> => {
-  const token = localStorage.getItem("hubdosaber-token");
-
-  if (!token) {
-    throw new Error("Token não encontrado. Faça login novamente.");
-  }
-
   try {
-    await axios.post(
-      `${API_URL}/groups/${groupId}/join`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    // Conforme GroupController: /api/group/join?groupId=xxx
+    await axiosInstance.post("/group/join", null, {
+      params: { groupId },
+    });
+    console.log("✅ Entrou no grupo com sucesso");
   } catch (error: any) {
-    console.error("Erro ao entrar no grupo:", error);
-    if (error.response?.status === 401) {
-      throw new Error("Sessão expirada. Faça login novamente.");
-    }
+    console.error("❌ Erro ao entrar no grupo:", error);
     throw new Error(error.response?.data?.message || "Erro ao entrar no grupo");
   }
 };
 
-// Criar um novo grupo
+// ✅ CORRIGIDO: Criar um novo grupo
 export const createGroup = async (groupData: {
   name: string;
   description: string;
   disciplineId: string;
   maxMembers: number;
   monitoring: boolean;
-}): Promise<Group> => {
-  const token = localStorage.getItem("hubdosaber-token");
-
-  if (!token) {
-    throw new Error("Token não encontrado. Faça login novamente.");
-  }
-
+}): Promise<string> => {
   try {
-    const response = await axios.post(`${API_URL}/groups`, groupData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    return response.data;
+    const response = await axiosInstance.post("/group", groupData);
+    console.log("✅ Grupo criado com sucesso:", response.data);
+    return response.data; // Retorna o ID do grupo
   } catch (error: any) {
-    console.error("Erro ao criar grupo:", error);
-    if (error.response?.status === 401) {
-      throw new Error("Sessão expirada. Faça login novamente.");
-    }
+    console.error("❌ Erro ao criar grupo:", error);
     throw new Error(error.response?.data?.message || "Erro ao criar grupo");
   }
 };

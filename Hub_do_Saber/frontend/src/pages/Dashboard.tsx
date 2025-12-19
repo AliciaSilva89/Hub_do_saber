@@ -1,5 +1,5 @@
-// Dashboard.tsx - VERSÃO OTIMIZADA
-import { useState, useEffect } from "react";
+// Dashboard.tsx - VERSÃO CORRIGIDA E OTIMIZADA
+import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,12 +19,22 @@ const Dashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"all" | "my">("all");
 
-  // Função para carregar grupos
-  const loadGroups = async (showRefreshing = false) => {
+  // ✅ Verificar autenticação primeiro
+  useEffect(() => {
+    const token = localStorage.getItem("hubdosaber-token");
+    if (!token) {
+      console.warn("⚠️ Token não encontrado. Redirecionando para login...");
+      navigate("/login", { replace: true });
+    }
+  }, [navigate]);
+
+  // ✅ useCallback para evitar recriação da função
+  const loadGroups = useCallback(async (showRefreshing = false) => {
     const token = localStorage.getItem("hubdosaber-token");
     
     if (!token) {
-      navigate("/login");
+      console.warn("⚠️ Token não encontrado durante carregamento");
+      navigate("/login", { replace: true });
       return;
     }
 
@@ -36,6 +46,8 @@ const Dashboard = () => {
       }
       setError(null);
       
+      console.log("🔄 Carregando grupos...");
+      
       const [allGroupsData, myGroupsData] = await Promise.all([
         fetchAllGroups(),
         fetchMyGroups()
@@ -44,38 +56,51 @@ const Dashboard = () => {
       setAllGroups(allGroupsData);
       setMyGroups(myGroupsData);
       
-      console.log("✅ Grupos carregados:", {
+      console.log("✅ Grupos carregados com sucesso:", {
         total: allGroupsData.length,
         meus: myGroupsData.length,
         timestamp: new Date().toLocaleTimeString()
       });
     } catch (err: any) {
       console.error("❌ Erro ao carregar grupos:", err);
-      setError(err.message || "Erro ao carregar grupos");
       
-      if (err.message?.includes("login") || err.message?.includes("401")) {
+      // ✅ Tratamento específico para erro 401
+      if (err.response?.status === 401 || err.message?.includes("401")) {
+        console.error("🔒 Token inválido ou expirado");
+        setError("Sessão expirada. Redirecionando para login...");
         localStorage.removeItem("hubdosaber-token");
-        setTimeout(() => navigate("/login"), 2000);
+        setTimeout(() => {
+          navigate("/login", { replace: true });
+        }, 2000);
+      } else {
+        setError(err.message || "Erro ao carregar grupos. Tente novamente.");
       }
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [navigate]);
 
-  // Carregar grupos ao montar o componente
+  // ✅ Carregar grupos ao montar o componente
   useEffect(() => {
-    loadGroups();
-  }, []);
+    const token = localStorage.getItem("hubdosaber-token");
+    if (token) {
+      loadGroups();
+    }
+  }, [loadGroups]);
 
-  // Atualizar grupos a cada 30 segundos para manter dados sincronizados
+  // ✅ Auto-refresh a cada 30 segundos (opcional - pode remover se preferir)
   useEffect(() => {
+    const token = localStorage.getItem("hubdosaber-token");
+    if (!token) return;
+
     const interval = setInterval(() => {
-      loadGroups(true); // true = mostra ícone de refresh ao invés de loading completo
+      console.log("🔄 Auto-refresh de grupos");
+      loadGroups(true);
     }, 30000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [loadGroups]);
 
   const displayGroups = activeTab === "my" ? myGroups : allGroups;
 
@@ -91,6 +116,23 @@ const Dashboard = () => {
     return matchesSearch && matchesSubject;
   });
 
+  // ✅ Handler para navegação para perfil
+  const handleProfileClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    navigate("/profile");
+  };
+
+  // ✅ Handler para criar grupo
+  const handleCreateGroup = () => {
+    navigate("/create-group");
+  };
+
+  // ✅ Handler para limpar filtros
+  const handleClearFilters = () => {
+    setSearchTerm("");
+    setSelectedSubject("");
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -104,8 +146,16 @@ const Dashboard = () => {
           </div>
           <nav className="flex items-center gap-6">
             <Link to="/dashboard" className="text-foreground font-medium">Grupos</Link>
-            <Link to="/profile" className="text-muted-foreground hover:text-primary">Perfil</Link>
-            <Button onClick={() => navigate("/create-group")} className="bg-black text-white hover:bg-black/90">
+            <button 
+              onClick={handleProfileClick}
+              className="text-muted-foreground hover:text-primary transition-colors"
+            >
+              Perfil
+            </button>
+            <Button 
+              onClick={handleCreateGroup} 
+              className="bg-black text-white hover:bg-black/90"
+            >
               Criar Grupo
             </Button>
           </nav>
@@ -128,7 +178,7 @@ const Dashboard = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-12">
         {/* Tabs com contador e botão refresh */}
-        <div className="flex gap-3 mb-8 justify-center items-center">
+        <div className="flex gap-3 mb-8 justify-center items-center flex-wrap">
           <Button
             variant={activeTab === "all" ? "default" : "outline"}
             onClick={() => setActiveTab("all")}
@@ -163,6 +213,7 @@ const Dashboard = () => {
             onClick={() => loadGroups(true)}
             disabled={refreshing || loading}
             title="Atualizar grupos"
+            className="h-12 w-12"
           >
             <RefreshCw className={`h-5 w-5 ${refreshing ? 'animate-spin' : ''}`} />
           </Button>
@@ -191,6 +242,15 @@ const Dashboard = () => {
               </option>
             ))}
           </select>
+          {(searchTerm || selectedSubject) && (
+            <Button 
+              variant="outline" 
+              onClick={handleClearFilters}
+              className="whitespace-nowrap"
+            >
+              Limpar Filtros
+            </Button>
+          )}
         </div>
 
         {/* Loading State */}
@@ -206,14 +266,16 @@ const Dashboard = () => {
           <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg mb-6">
             <p className="font-semibold">❌ Erro ao carregar grupos</p>
             <p>{error}</p>
-            <Button 
-              onClick={() => loadGroups()} 
-              variant="outline" 
-              size="sm" 
-              className="mt-2"
-            >
-              Tentar novamente
-            </Button>
+            {!error.includes("Sessão expirada") && (
+              <Button 
+                onClick={() => loadGroups()} 
+                variant="outline" 
+                size="sm" 
+                className="mt-2"
+              >
+                Tentar novamente
+              </Button>
+            )}
           </div>
         )}
 
@@ -237,8 +299,7 @@ const Dashboard = () => {
                     if (activeTab === "my") {
                       setActiveTab("all");
                     } else {
-                      setSearchTerm("");
-                      setSelectedSubject("");
+                      handleClearFilters();
                     }
                   }}
                   variant="outline"
@@ -276,7 +337,7 @@ const Dashboard = () => {
                             {group.disciplineName}
                           </Badge>
                           
-                          {/* ✅ Número de participantes atualizado */}
+                          {/* Número de participantes */}
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Users className="h-4 w-4 flex-shrink-0" />
                             <span>
