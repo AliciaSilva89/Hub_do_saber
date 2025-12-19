@@ -28,6 +28,8 @@ public class StudyGroupDetailDTO {
     private List<UserMemberDTO> members = new ArrayList<>();
     private UUID ownerId;
     private String ownerName;
+    private int currentMembers;
+    private int onlineMembers;
 
     public StudyGroupDetailDTO(StudyGroup group) {
         this.id = group.getId();
@@ -47,6 +49,14 @@ public class StudyGroupDetailDTO {
         this.courseName = course.getName();
         this.universityName = university.getName();
 
+        // ✅ Contar total de membros
+        this.currentMembers = group.getUserGroups().size();
+
+        // ✅ Contar membros online (últimos 5 minutos)
+        this.onlineMembers = (int) group.getUserGroups().stream()
+                .filter(ug -> ug.getUser().isOnline())
+                .count();
+
         this.members = group.getUserGroups().stream()
                 .map(userGroup -> {
                     if (userGroup.getType() == UserGroupType.OWNER) {
@@ -63,7 +73,7 @@ public class StudyGroupDetailDTO {
                             user.getName(),
                             user.getEmail(),
                             courseDTO,
-                            user.getProfilePicture()); // ✅ ADICIONAR profilePicture
+                            user.getProfilePicture());
                 })
                 .collect(Collectors.toList());
     }

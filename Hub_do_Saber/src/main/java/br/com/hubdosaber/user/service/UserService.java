@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.stream.Collectors;
 
@@ -152,5 +153,13 @@ public class UserService {
                 Collections.emptyList(),
                 user.getIsActive() != null ? user.getIsActive() : true
         );
+    }
+    
+    @Transactional
+    public void updateLastSeen(UUID id) {
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + id));
+        user.setLastSeen(LocalDateTime.now());
+        userRepository.save(user);
     }
 }

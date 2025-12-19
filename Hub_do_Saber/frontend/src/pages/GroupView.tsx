@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   Users, 
   MapPin, 
@@ -29,70 +29,93 @@ const GroupView = () => {
   const [isAlreadyMember, setIsAlreadyMember] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
- useEffect(() => {
-  const loadGroupData = async () => {
-    if (!id) {
-      setLoading(false);
-      setError("ID do grupo não encontrado");
-      return;
-    }
+  // ✅ ADICIONAR - Heartbeat para marcar presença
+  useEffect(() => {
+    const sendHeartbeat = async () => {
+      const token = localStorage.getItem("hubdosaber-token");
+      if (!token) return;
 
-    const token = localStorage.getItem("hubdosaber-token");
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-
-    try {
-      setError(null);
-      
-      // Buscar dados do usuário logado
-      const userResponse = await axios.get("http://localhost:8080/api/users/me", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const userId = userResponse.data.id;
-      setCurrentUserId(userId);
-      
-      console.log("👤 ID do usuário logado:", userId);
-      
-      // Buscar dados do grupo
-      const data = await fetchGroupDetail(id);
-      console.log("📦 Dados do grupo recebidos:", data);
-      console.log("👥 Membros do grupo:", data.members);
-      
-      setGroupData(data);
-      
-      // ✅ Verificar se o usuário já é membro (testar diferentes formatos)
-      let isMember = false;
-      
-      if (Array.isArray(data.members)) {
-        isMember = data.members.some((member: any) => {
-          // Tentar diferentes formatos de ID
-          const memberId = member.id || member.userId || member.user?.id;
-          console.log("🔍 Comparando:", memberId, "com", userId);
-          return memberId === userId || memberId === String(userId) || String(memberId) === String(userId);
+      try {
+        await axios.post("http://localhost:8080/api/users/me/heartbeat", {}, {
+          headers: { Authorization: `Bearer ${token}` }
         });
+        console.log("💓 Heartbeat enviado");
+      } catch (error) {
+        console.error("❌ Erro ao enviar heartbeat:", error);
       }
-      
-      setIsAlreadyMember(isMember);
-      console.log("✅ Usuário já é membro?", isMember);
-      
-    } catch (err: unknown) {
-      const error = err instanceof Error ? err : new Error("Erro desconhecido");
-      console.error("❌ Erro ao carregar grupo:", error);
-      setError(error.message || "Erro ao carregar grupo");
-      
-      if (error.message?.includes("login")) {
-        setTimeout(() => navigate("/login"), 2000);
+    };
+
+    // Enviar heartbeat imediatamente
+    sendHeartbeat();
+
+    // Enviar heartbeat a cada 2 minutos
+    const interval = setInterval(sendHeartbeat, 120000); // 2 minutos
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const loadGroupData = async () => {
+      if (!id) {
+        setLoading(false);
+        setError("ID do grupo não encontrado");
+        return;
       }
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  loadGroupData();
-}, [id, navigate]);
+      const token = localStorage.getItem("hubdosaber-token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
 
+      try {
+        setError(null);
+        
+        // Buscar dados do usuário logado
+        const userResponse = await axios.get("http://localhost:8080/api/users/me", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const userId = userResponse.data.id;
+        setCurrentUserId(userId);
+        
+        console.log("👤 ID do usuário logado:", userId);
+        
+        // Buscar dados do grupo
+        const data = await fetchGroupDetail(id);
+        console.log("📦 Dados do grupo recebidos:", data);
+        console.log("👥 Membros do grupo:", data.members);
+        
+        setGroupData(data);
+        
+        // Verificar se o usuário já é membro
+        let isMember = false;
+        
+        if (Array.isArray(data.members)) {
+          isMember = data.members.some((member: any) => {
+            const memberId = member.id || member.userId || member.user?.id;
+            console.log("🔍 Comparando:", memberId, "com", userId);
+            return memberId === userId || memberId === String(userId) || String(memberId) === String(userId);
+          });
+        }
+        
+        setIsAlreadyMember(isMember);
+        console.log("✅ Usuário já é membro?", isMember);
+        
+      } catch (err: unknown) {
+        const error = err instanceof Error ? err : new Error("Erro desconhecido");
+        console.error("❌ Erro ao carregar grupo:", error);
+        setError(error.message || "Erro ao carregar grupo");
+        
+        if (error.message?.includes("login")) {
+          setTimeout(() => navigate("/login"), 2000);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadGroupData();
+  }, [id, navigate]);
 
   const handleJoin = async () => {
     const token = localStorage.getItem("hubdosaber-token");
@@ -111,7 +134,6 @@ const GroupView = () => {
       await joinGroup(id);
       alert("Você entrou no grupo com sucesso!");
       
-      // Recarregar os dados do grupo para atualizar participantes
       const updatedData = await fetchGroupDetail(id);
       setGroupData(updatedData);
       setIsAlreadyMember(true);
@@ -170,25 +192,23 @@ const GroupView = () => {
     return null;
   }
 
-  // ✅ Remover membros duplicados usando Set baseado no ID
-  // ✅ Remover membros duplicados e contar corretamente
-const uniqueMembers = Array.isArray(groupData.members) 
-  ? Array.from(
-      new Map(
-        groupData.members
-          .filter((member: any) => member && (member.id || member.userId)) // Filtrar membros válidos
-          .map((member: any) => {
-            const memberId = member.id || member.userId || member.user?.id;
-            return [memberId, member];
-          })
-      ).values()
-    )
-  : [];
+  const uniqueMembers = Array.isArray(groupData.members) 
+    ? Array.from(
+        new Map(
+          groupData.members
+            .filter((member: any) => member && (member.id || member.userId))
+            .map((member: any) => {
+              const memberId = member.id || member.userId || member.user?.id;
+              return [memberId, member];
+            })
+        ).values()
+      )
+    : [];
 
-console.log("📊 Membros únicos filtrados:", uniqueMembers);
+  console.log("📊 Membros únicos filtrados:", uniqueMembers);
 
-const participantsCount = uniqueMembers.length;
-const availableSlots = Math.max(groupData.maxMembers - participantsCount, 0);
+  const participantsCount = uniqueMembers.length;
+  const availableSlots = Math.max(groupData.maxMembers - participantsCount, 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -217,7 +237,6 @@ const availableSlots = Math.max(groupData.maxMembers - participantsCount, 0);
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Breadcrumb / Back Button */}
         <Button
           variant="ghost"
           onClick={() => navigate("/dashboard")}
@@ -347,7 +366,10 @@ const availableSlots = Math.max(groupData.maxMembers - participantsCount, 0);
                   <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                     <div>
                       <p className="text-2xl font-bold">{participantsCount}</p>
-                      <p className="text-sm text-muted-foreground">Membros atuais</p>
+                      <p className="text-sm text-muted-foreground">
+                        {/* ✅ Mostrar membros online */}
+                        {groupData.onlineMembers || 0} online de {participantsCount} membros
+                      </p>
                     </div>
                     <Users className="h-8 w-8 text-muted-foreground" />
                   </div>
@@ -375,7 +397,7 @@ const availableSlots = Math.max(groupData.maxMembers - participantsCount, 0);
                   </div>
                 </div>
 
-                {/* ✅ Lista de Membros SEM DUPLICATAS */}
+                {/* Lista de Membros com fotos */}
                 {uniqueMembers.length > 0 && (
                   <div className="mt-6">
                     <h4 className="font-semibold mb-3 text-sm">Membros do grupo</h4>
@@ -385,8 +407,13 @@ const availableSlots = Math.max(groupData.maxMembers - participantsCount, 0);
                           key={member.id}
                           className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50"
                         >
+                          {/* ✅ Avatar com foto de perfil */}
                           <Avatar className="h-8 w-8">
-                            <AvatarFallback>
+                            <AvatarImage 
+                              src={member.profilePicture || undefined} 
+                              alt={member.name} 
+                            />
+                            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white text-xs">
                               {member.name?.[0]?.toUpperCase() || "U"}
                             </AvatarFallback>
                           </Avatar>

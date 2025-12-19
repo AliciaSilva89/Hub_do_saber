@@ -67,4 +67,11 @@ public class UserController {
         userService.deactivateUser(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/me/heartbeat")
+    public ResponseEntity<Void> updateHeartbeat(@AuthenticationPrincipal Jwt principal) {
+        UUID id = UUID.fromString(principal.getSubject());
+        userService.updateLastSeen(id);
+        return ResponseEntity.ok().build();
+    }
 }
