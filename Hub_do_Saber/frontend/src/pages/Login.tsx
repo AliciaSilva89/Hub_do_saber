@@ -74,7 +74,7 @@ const Login = () => {
         <div className="min-h-screen bg-background flex items-center justify-center p-4">
             <div className="w-full max-w-md bg-card border-2 border-primary/20 rounded-lg p-8 shadow-lg">
                 <div className="flex justify-center mb-6">
-                    <img src="/logohubdosaber.png" className="w-20 h-20 rounded-lg object-cover" />
+                    <img src="/logo.png" className="w-20 h-20 rounded-lg object-cover" />
                 </div>
                 <h1 className="text-2xl font-bold text-center mb-8 text-foreground">
                     Hub do Saber

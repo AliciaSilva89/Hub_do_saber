@@ -87,7 +87,7 @@ const Cadastro = () => {
         {/* Logo */}
         <div className="flex justify-center mb-6">
           <img
-            src="/logohubdosaber.png"
+            src="/logo.png"
             className="w-20 h-20 rounded-lg object-cover"
           />
         </div>

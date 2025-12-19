@@ -249,8 +249,9 @@ const GroupChat = () => {
       <header className="border-b bg-card px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold">HS</span>
+            <div className="flex items-center gap-3">
+              <img src="/logo.png" alt="Hub do Saber" className="w-20 h-20 rounded-lg" />
+              <span className="font-semibold text-lg">Hub do Saber</span>
             </div>
             <span className="font-semibold text-lg">Hub do Saber</span>
           </div>

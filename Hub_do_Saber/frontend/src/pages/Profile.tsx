@@ -303,20 +303,28 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card px-6 py-4">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold">HS</span>
-            </div>
-            <span className="font-semibold text-lg">Hub do Saber</span>
-          </div>
-          <nav className="flex items-center gap-6">
-            <Link to="/dashboard" className="text-muted-foreground hover:text-primary">Grupos</Link>
-            <Link to="/profile" className="text-foreground font-medium">Perfil</Link>
-            <Button onClick={() => navigate("/create-group")} className="bg-black text-white">Criar Grupo</Button>
-          </nav>
-        </div>
-      </header>
+  <div className="flex items-center justify-between max-w-7xl mx-auto">
+    {/* Logo e nome */}
+    <div className="flex items-center gap-3">
+      <img src="/logo.png" alt="Hub do Saber" className="w-20 h-20 rounded-lg" />
+      <span className="font-semibold text-lg">Hub do Saber</span>
+    </div>
+    
+    {/* Navegação */}
+    <nav className="flex items-center gap-6">
+      <Link to="/dashboard" className="text-muted-foreground hover:text-primary">
+        Grupos
+      </Link>
+      <Link to="/profile" className="text-muted-foreground hover:text-primary">
+        Perfil
+      </Link>
+      <Button onClick={() => navigate("/create-group")} className="bg-black text-white">
+        Criar Grupo
+      </Button>
+    </nav>
+  </div>
+</header>
+
 
       <main className="max-w-6xl mx-auto px-6 py-8">
         <div className="flex items-center gap-4 mb-8">

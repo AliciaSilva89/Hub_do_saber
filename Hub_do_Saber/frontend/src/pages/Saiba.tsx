@@ -9,9 +9,9 @@ const Saiba = () => {
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
             <img
-              src="/logohubdosaber.png"
+              src="/logo.png"
               alt="Logo da plataforma Hub do Saber"
-              className="w-16 h-16 rounded-lg object-cover"
+              className="w-20 h-20 rounded-lg object-cover"
             />
             <span className="font-semibold text-lg">Hub do Saber</span>
           </div>
