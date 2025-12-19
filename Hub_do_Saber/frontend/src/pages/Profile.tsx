@@ -32,7 +32,7 @@ import {
   Camera,
   Loader2
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import axios from "axios";
@@ -55,9 +55,9 @@ interface UserData {
 interface CalendarEvent {
   id: string;
   title: string;
-  type: "trabalho" | "aula" | "reuniao";
-  date: Date;
-  time: string;
+  type: "TRABALHO" | "AULA" | "REUNIAO";
+  eventDate: string; // ISO string
+  eventTime: string; // HH:mm
   link?: string;
 }
 
@@ -69,15 +69,14 @@ const Profile = () => {
   const [loadingGroups, setLoadingGroups] = useState(true);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [loadingEvents, setLoadingEvents] = useState(true);
   
-  const [events, setEvents] = useState<CalendarEvent[]>([
-    { id: "1", title: "Aula de Programação", type: "aula", date: new Date(), time: "19:00" }
-  ]);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
   const [newEvent, setNewEvent] = useState({ 
     title: "", 
-    type: "trabalho" as CalendarEvent['type'], 
+    type: "TRABALHO" as CalendarEvent['type'], 
     date: new Date(), 
     time: "", 
     link: "" 
@@ -91,33 +90,98 @@ const Profile = () => {
     profilePicture: undefined,
   });
 
-  const handleAddEvent = () => {
-    if (!newEvent.title || !newEvent.time) return;
-    setEvents(prev => [...prev, { ...newEvent, id: Date.now().toString() }]);
-    setIsAddEventOpen(false);
-    setNewEvent({ title: "", type: "trabalho", date: new Date(), time: "", link: "" });
+  // ✅ Carregar eventos do backend
+  const loadEvents = async () => {
+    const token = localStorage.getItem("hubdosaber-token");
+    if (!token) return;
+
+    try {
+      setLoadingEvents(true);
+      const response = await axios.get("http://localhost:8080/api/events", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setEvents(response.data);
+      console.log("✅ Eventos carregados:", response.data);
+    } catch (error) {
+      console.error("❌ Erro ao carregar eventos:", error);
+    } finally {
+      setLoadingEvents(false);
+    }
   };
 
-  const handleDeleteEvent = (eventId: string) => {
-    setEvents(prev => prev.filter(e => e.id !== eventId));
+  // ✅ Adicionar evento no backend
+  const handleAddEvent = async () => {
+    if (!newEvent.title || !newEvent.time) {
+      alert("Preencha o título e horário do evento");
+      return;
+    }
+
+    const token = localStorage.getItem("hubdosaber-token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        "http://localhost:8080/api/events",
+        {
+          title: newEvent.title,
+          type: newEvent.type,
+          eventDate: format(newEvent.date, "yyyy-MM-dd"),
+          eventTime: newEvent.time,
+          link: newEvent.link || null,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setEvents(prev => [...prev, response.data]);
+      setIsAddEventOpen(false);
+      setNewEvent({ title: "", type: "TRABALHO", date: new Date(), time: "", link: "" });
+      console.log("✅ Evento criado:", response.data);
+    } catch (error) {
+      console.error("❌ Erro ao criar evento:", error);
+      alert("Erro ao criar evento. Tente novamente.");
+    }
   };
 
-  const getEventsForDate = (date: Date) => 
-    events.filter(e => e.date.toDateString() === date.toDateString());
+  // ✅ Deletar evento do backend
+  const handleDeleteEvent = async (eventId: string) => {
+    const token = localStorage.getItem("hubdosaber-token");
+    if (!token) return;
 
-  // ✅ Handler para upload de foto (ÚNICA DECLARAÇÃO)
+    try {
+      await axios.delete(`http://localhost:8080/api/events/${eventId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setEvents(prev => prev.filter(e => e.id !== eventId));
+      console.log("✅ Evento deletado");
+    } catch (error) {
+      console.error("❌ Erro ao deletar evento:", error);
+      alert("Erro ao deletar evento.");
+    }
+  };
+
+  // ✅ Obter eventos de uma data específica
+  const getEventsForDate = (date: Date) => {
+    const dateStr = format(date, "yyyy-MM-dd");
+    return events.filter(e => e.eventDate === dateStr);
+  };
+
+  // ✅ Verificar se uma data tem eventos (para destacar no calendário)
+  const hasEventsOnDate = (date: Date) => {
+    const dateStr = format(date, "yyyy-MM-dd");
+    return events.some(e => e.eventDate === dateStr);
+  };
+
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     try {
       setUploadingPhoto(true);
-      // Não precisa mais passar userId
       const newProfilePicture = await uploadProfilePicture(file);
-      
-      // Atualizar estado local
       setUserData((prev) => ({ ...prev, profilePicture: newProfilePicture }));
-      
       console.log("✅ Foto de perfil atualizada com sucesso");
     } catch (err: any) {
       console.error("❌ Erro ao fazer upload da foto:", err);
@@ -130,7 +194,6 @@ const Profile = () => {
     }
   };
 
-  // Trigger do input de arquivo
   const triggerFileInput = () => {
     fileInputRef.current?.click();
   };
@@ -145,7 +208,6 @@ const Profile = () => {
       }
 
       try {
-        // ✅ Buscar dados do perfil (não precisa passar userId)
         const profileData = await getUserProfile();
         
         setUserData({
@@ -157,9 +219,11 @@ const Profile = () => {
           profilePicture: profileData.profilePicture,
         });
 
-        // Buscar grupos do usuário
         const myGroupsData = await fetchMyGroups();
         setMyGroups(myGroupsData);
+
+        // ✅ Carregar eventos
+        await loadEvents();
 
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
@@ -191,7 +255,6 @@ const Profile = () => {
     setUserData(prev => ({ ...prev, [field]: value }));
   };
 
-  // ✅ Função para obter iniciais do nome
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -199,6 +262,34 @@ const Profile = () => {
       .join("")
       .toUpperCase()
       .substring(0, 2);
+  };
+
+  // ✅ Ícone baseado no tipo
+  const getEventIcon = (type: string) => {
+    switch (type) {
+      case "AULA":
+        return <BookOpen className="h-4 w-4" />;
+      case "TRABALHO":
+        return <GraduationCap className="h-4 w-4" />;
+      case "REUNIAO":
+        return <Video className="h-4 w-4" />;
+      default:
+        return <Clock className="h-4 w-4" />;
+    }
+  };
+
+  // ✅ Label em português
+  const getEventTypeLabel = (type: string) => {
+    switch (type) {
+      case "AULA":
+        return "📚 Aula";
+      case "TRABALHO":
+        return "💻 Trabalho";
+      case "REUNIAO":
+        return "📅 Reunião";
+      default:
+        return type;
+    }
   };
 
   if (loadingProfile) {
@@ -228,7 +319,6 @@ const Profile = () => {
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-8">
-        {/* ✅ Avatar com botão de upload de foto */}
         <div className="flex items-center gap-4 mb-8">
           <div className="relative">
             <Avatar className="w-20 h-20 border-4 border-primary/20">
@@ -241,7 +331,6 @@ const Profile = () => {
               </AvatarFallback>
             </Avatar>
             
-            {/* Botão de câmera para upload */}
             <button
               onClick={triggerFileInput}
               disabled={uploadingPhoto}
@@ -255,7 +344,6 @@ const Profile = () => {
               )}
             </button>
             
-            {/* Input file oculto */}
             <input
               ref={fileInputRef}
               type="file"
@@ -386,9 +474,9 @@ const Profile = () => {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="aula">📚 Aula</SelectItem>
-                            <SelectItem value="trabalho">💻 Trabalho</SelectItem>
-                            <SelectItem value="reuniao">📅 Reunião</SelectItem>
+                            <SelectItem value="AULA">📚 Aula</SelectItem>
+                            <SelectItem value="TRABALHO">💻 Trabalho</SelectItem>
+                            <SelectItem value="REUNIAO">📅 Reunião</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -435,37 +523,49 @@ const Profile = () => {
                 </Dialog>
               </CardHeader>
               <CardContent>
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  className="rounded-md border"
-                  locale={ptBR}
-                />
-                {selectedDate && getEventsForDate(selectedDate).length > 0 && (
-                  <div className="mt-4 space-y-2">
-                    <h4 className="font-medium flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      Eventos do dia ({getEventsForDate(selectedDate).length})
-                    </h4>
-                    {getEventsForDate(selectedDate).map(event => (
-                      <div key={event.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                        <div className="flex items-center gap-2">
-                          {event.type === "aula" && <BookOpen className="h-4 w-4" />}
-                          {event.type === "trabalho" && <GraduationCap className="h-4 w-4" />}
-                          {event.type === "reuniao" && <Video className="h-4 w-4" />}
-                          <span className="text-sm">{event.title} <span className="text-xs text-muted-foreground">({event.time})</span></span>
-                        </div>
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
-                          onClick={() => handleDeleteEvent(event.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
+                {loadingEvents ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin" />
                   </div>
+                ) : (
+                  <>
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={setSelectedDate}
+                      className="rounded-md border"
+                      locale={ptBR}
+                      modifiers={{
+                        hasEvent: (date) => hasEventsOnDate(date),
+                      }}
+                      modifiersClassNames={{
+                        hasEvent: "bg-primary/20 font-bold",
+                      }}
+                    />
+                    {selectedDate && getEventsForDate(selectedDate).length > 0 && (
+                      <div className="mt-4 space-y-2">
+                        <h4 className="font-medium flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          Eventos do dia ({getEventsForDate(selectedDate).length})
+                        </h4>
+                        {getEventsForDate(selectedDate).map(event => (
+                          <div key={event.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                            <div className="flex items-center gap-2">
+                              {getEventIcon(event.type)}
+                              <span className="text-sm">{event.title} <span className="text-xs text-muted-foreground">({event.eventTime})</span></span>
+                            </div>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              onClick={() => handleDeleteEvent(event.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>

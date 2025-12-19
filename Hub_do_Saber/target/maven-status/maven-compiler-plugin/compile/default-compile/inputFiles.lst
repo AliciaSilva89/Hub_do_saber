@@ -20,6 +20,13 @@ C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\c
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\discipline\repository\UserDisciplineInterestRepository.java
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\discipline\request\UpdateDisciplineRequest.java
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\discipline\service\DisciplineService.java
+C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\event\controller\EventController.java
+C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\event\dto\EventDTO.java
+C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\event\model\Event.java
+C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\event\model\EventType.java
+C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\event\repository\EventRepository.java
+C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\event\request\CreateEventRequest.java
+C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\event\service\EventService.java
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\group\controller\GroupController.java
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\group\controller\StudyGroupController.java
 C:\Users\kasym\Downloads\PDSI2\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\group\dto\StudyGroupDetailDTO.java
