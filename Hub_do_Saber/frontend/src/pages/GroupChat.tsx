@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Send, Settings, Lock, Image, Download, X, Loader2, ArrowLeft } from "lucide-react";
@@ -18,6 +18,7 @@ interface Message {
   content?: string;
   imageUrl?: string;
   createdAt: string;
+  profilePicture?: string; // ✅ ADICIONAR
 }
 
 interface GroupInfo {
@@ -33,6 +34,7 @@ interface UserData {
   id: string;
   name: string;
   email: string;
+  profilePicture?: string; // ✅ ADICIONAR
 }
 
 const GroupChat = () => {
@@ -379,7 +381,14 @@ const GroupChat = () => {
                       <div className={`flex gap-3 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
                         {!isOwnMessage && (
                           <Avatar className="h-10 w-10">
-                            <AvatarFallback>{message.userAvatar}</AvatarFallback>
+                            {/* ✅ Usar foto de perfil */}
+                            <AvatarImage 
+                              src={message.profilePicture || undefined} 
+                              alt={message.userName} 
+                            />
+                            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white">
+                              {message.userAvatar}
+                            </AvatarFallback>
                           </Avatar>
                         )}
 
@@ -425,6 +434,11 @@ const GroupChat = () => {
 
                         {isOwnMessage && (
                           <Avatar className="h-10 w-10">
+                            {/* ✅ Usar foto de perfil do usuário logado */}
+                            <AvatarImage 
+                              src={userData?.profilePicture || undefined} 
+                              alt={userData?.name} 
+                            />
                             <AvatarFallback className="bg-blue-600 text-white">
                               {message.userAvatar}
                             </AvatarFallback>

@@ -19,7 +19,8 @@ public class MessageDTO {
     private String content;
     private String imageUrl;
     private LocalDateTime createdAt;
-    
+    private String profilePicture; // ✅ JÁ EXISTE
+
     public MessageDTO(Message message) {
         this.id = message.getId();
         this.userId = message.getUser().getId();
@@ -28,16 +29,17 @@ public class MessageDTO {
         this.content = message.getContent();
         this.imageUrl = message.getImageUrl();
         this.createdAt = message.getCreatedAt();
+        this.profilePicture = message.getUser().getProfilePicture(); // ✅ ADICIONAR ESTA LINHA
     }
-    
+
     private String getInitials(String name) {
-        if (name == null || name.trim().isEmpty()) return "U";
+        if (name == null || name.trim().isEmpty())
+            return "U";
         String[] parts = name.trim().split("\\s+");
         if (parts.length >= 2) {
-            return parts[0].substring(0, 1).toUpperCase() + 
-                   parts[1].substring(0, 1).toUpperCase();
+            return parts[0].substring(0, 1).toUpperCase() +
+                    parts[1].substring(0, 1).toUpperCase();
         }
         return name.substring(0, Math.min(2, name.length())).toUpperCase();
     }
 }
-

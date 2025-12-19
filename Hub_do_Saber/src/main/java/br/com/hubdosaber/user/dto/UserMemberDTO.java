@@ -15,4 +15,5 @@ public class UserMemberDTO {
     private String name;
     private String email;
     private CourseDTO course;
+    private String profilePicture; 
 }

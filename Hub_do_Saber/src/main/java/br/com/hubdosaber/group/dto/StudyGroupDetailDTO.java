@@ -29,7 +29,6 @@ public class StudyGroupDetailDTO {
     private UUID ownerId;
     private String ownerName;
 
-
     public StudyGroupDetailDTO(StudyGroup group) {
         this.id = group.getId();
         this.name = group.getName();
@@ -63,7 +62,8 @@ public class StudyGroupDetailDTO {
                             user.getMatriculation(),
                             user.getName(),
                             user.getEmail(),
-                            courseDTO);
+                            courseDTO,
+                            user.getProfilePicture()); // ✅ ADICIONAR profilePicture
                 })
                 .collect(Collectors.toList());
     }
