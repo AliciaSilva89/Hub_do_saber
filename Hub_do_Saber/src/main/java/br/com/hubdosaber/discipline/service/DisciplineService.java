@@ -5,11 +5,12 @@ import br.com.hubdosaber.discipline.dto.DisciplineDTO;
 import br.com.hubdosaber.discipline.model.Discipline;
 import br.com.hubdosaber.discipline.repository.DisciplineRepository;
 import br.com.hubdosaber.course.repositoy.CourseRepository;
-
 import br.com.hubdosaber.discipline.request.UpdateDisciplineRequest;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,16 +22,14 @@ public class DisciplineService {
     private final DisciplineRepository disciplineRepository;
     private final CourseRepository courseRepository;
 
-    public List<DisciplineDTO> findDisciplinesByCourseId(java.util.UUID courseId) {
-
+    public List<DisciplineDTO> findDisciplinesByCourseId(UUID courseId) {
         return disciplineRepository.findDisciplinesWithCourseByCourseId(courseId)
                 .stream()
                 .map(this::convertToDTO)
                 .toList();
     }
 
-    private DisciplineDTO convertToDTO(br.com.hubdosaber.discipline.model.Discipline discipline) {
-
+    private DisciplineDTO convertToDTO(Discipline discipline) {
         return new DisciplineDTO(
                 discipline.getId(),
                 discipline.getName(),
@@ -40,9 +39,10 @@ public class DisciplineService {
                 discipline.getCourse().getId(),
                 discipline.getCourse().getName());
     }
+
     public DisciplineDTO updateDiscipline(UUID id, UpdateDisciplineRequest request) {
         Discipline discipline = disciplineRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Discipline not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException("Discipline not found with id: " + id));
 
         if (request.getName() != null) {
             discipline.setName(request.getName());
@@ -56,14 +56,22 @@ public class DisciplineService {
         if (request.getSemester() != null) {
             discipline.setSemester(request.getSemester());
         }
-        
+
         if (request.getCourseId() != null && !request.getCourseId().equals(discipline.getCourse().getId())) {
             Course newCourse = courseRepository.findById(request.getCourseId())
-                .orElseThrow(() -> new RuntimeException("Course not found with id: " + request.getCourseId()));
+                    .orElseThrow(() -> new RuntimeException("Course not found with id: " + request.getCourseId()));
             discipline.setCourse(newCourse);
         }
 
         Discipline updated = disciplineRepository.save(discipline);
         return convertToDTO(updated);
+    }
+
+    // ✅ NOVO: Buscar todas as disciplinas
+    @Transactional(readOnly = true)
+    public List<DisciplineDTO> findAllDisciplines() {
+        return disciplineRepository.findAll().stream()
+                .map(this::convertToDTO) // ✅ CORRIGIDO: usar convertToDTO
+                .collect(Collectors.toList());
     }
 }

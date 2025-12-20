@@ -54,7 +54,7 @@ public class UserService {
         user.setIsActive(true);
 
         if (request.getCourseName() != null && !request.getCourseName().isEmpty()) {
-            Course course = courseRepository.findByNameIgnoreCase(request.getCourseName())
+            Course course = courseRepository.findByNameIgnoreCase(request.getCourseName().trim())
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Course not found with name: " + request.getCourseName()));
             user.setCourse(course);
