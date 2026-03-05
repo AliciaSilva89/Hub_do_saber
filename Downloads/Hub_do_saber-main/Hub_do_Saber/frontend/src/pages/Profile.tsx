@@ -90,10 +90,12 @@ const Profile = () => {
     profilePicture: undefined,
   });
 
+
   const handleLogout = () => {
-    localStorage.removeItem("hubdosaber-token");
-    navigate("/login");
-  };
+  localStorage.removeItem("hubdosaber-token");
+  navigate("/login");
+};
+
 
   // ✅ Carregar eventos do backend
   const loadEvents = async () => {
