@@ -40,7 +40,6 @@ public class GroupService {
         var discipline = disciplineRepository.findById(disciplineId)
                 .orElseThrow(() -> new RuntimeException("Discipline not found with id: " + disciplineId));
 
-        // Validação do número máximo de membros
         if (createGroupRequest.getMaxMembers() < 2) {
             throw new RuntimeException("O grupo deve ter no mínimo 2 membros");
         }
@@ -48,7 +47,6 @@ public class GroupService {
             throw new RuntimeException("O grupo não pode ter mais de 100 membros");
         }
 
-        // Criação da entidade
         StudyGroup studyGroup = new StudyGroup();
         studyGroup.setName(createGroupRequest.getName());
         studyGroup.setDescription(createGroupRequest.getDescription());
@@ -57,14 +55,11 @@ public class GroupService {
         studyGroup.setActive(true);
         studyGroup.setDiscipline(discipline);
 
-        // 1. Salva o grupo primeiro para gerar o ID
         StudyGroup savedStudyGroup = groupRepository.save(studyGroup);
 
-        // 2. Cria o vínculo do criador como DONO (OWNER)
         UserGroup userGroup = new UserGroup(user, savedStudyGroup, UserGroupType.OWNER);
         userGroupRepository.save(userGroup);
 
-        // 3. Retorna o grupo salvo (contendo o ID gerado)
         return savedStudyGroup;
     }
 
@@ -93,7 +88,6 @@ public class GroupService {
             group.setDescription(updateGroupRequest.getDescription());
         }
         if (updateGroupRequest.getMaxMembers() != null) {
-            // ✅ Validar que o novo limite não é menor que o número atual de membros
             int currentMembers = (int) group.getUserGroups().stream()
                     .filter(ug -> ug.getUser() != null && ug.getUser().isActive())
                     .count();
@@ -128,7 +122,7 @@ public class GroupService {
     @Transactional(readOnly = true)
     public List<StudyGroupDTO> listAllGroups() {
         return groupRepository.findAllWithDetails().stream()
-                .filter(group -> group.isActive()) // ✅ Apenas grupos ativos
+                .filter(group -> group.isActive())
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
@@ -151,16 +145,13 @@ public class GroupService {
         User user = userRepository.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
 
-        // ✅ Usar findGroupDetailById para carregar os membros junto
         StudyGroup studyGroup = groupRepository.findGroupDetailById(UUID.fromString(groupId))
                 .orElseThrow(() -> new RuntimeException("Group not found with id: " + groupId));
 
-        // ✅ Verificar se o grupo está ativo
         if (!studyGroup.isActive()) {
             throw new RuntimeException("Este grupo não está mais ativo");
         }
 
-        // ✅ Verificar se o usuário já está no grupo
         boolean alreadyMember = studyGroup.getUserGroups().stream()
                 .anyMatch(ug -> ug.getUser() != null && ug.getUser().getId().equals(user.getId()));
 
@@ -168,7 +159,6 @@ public class GroupService {
             throw new RuntimeException("Você já é membro deste grupo");
         }
 
-        // ✅ Verificar se o grupo está cheio (contar apenas usuários ativos)
         long currentMembers = studyGroup.getUserGroups().stream()
                 .filter(ug -> ug.getUser() != null && ug.getUser().isActive())
                 .count();
@@ -177,7 +167,6 @@ public class GroupService {
             throw new RuntimeException("O grupo está cheio. Capacidade máxima: " + studyGroup.getMaxMembers());
         }
 
-        // ✅ Adicionar o usuário como MEMBER
         UserGroup userGroup = new UserGroup(user, studyGroup, UserGroupType.MEMBER);
         userGroupRepository.save(userGroup);
     }
@@ -193,7 +182,6 @@ public class GroupService {
         StudyGroup studyGroup = groupRepository.findGroupDetailById(UUID.fromString(groupId))
                 .orElseThrow(() -> new RuntimeException("Group not found with id: " + groupId));
 
-        // ✅ Verificar se o usuário é o dono
         boolean isOwner = studyGroup.getUserGroups().stream()
                 .anyMatch(ug -> ug.getType() == UserGroupType.OWNER
                         && ug.getUser() != null
@@ -203,7 +191,6 @@ public class GroupService {
             throw new RuntimeException("O dono do grupo não pode sair. Delete o grupo se necessário.");
         }
 
-        // ✅ Remover o usuário do grupo
         UserGroup userGroup = studyGroup.getUserGroups().stream()
                 .filter(ug -> ug.getUser() != null && ug.getUser().getId().equals(user.getId()))
                 .findFirst()
@@ -230,21 +217,27 @@ public class GroupService {
 
         UUID ownerId = null;
         String ownerName = null;
+        String ownerCourseName = null; // ✅ curso do criador
+
         if (ownerUserGroup != null && ownerUserGroup.getUser() != null) {
-            ownerId = ownerUserGroup.getUser().getId();
-            ownerName = ownerUserGroup.getUser().getName();
+            var owner = ownerUserGroup.getUser();
+            ownerId = owner.getId();
+            ownerName = owner.getName();
+
+            // ✅ Pega o curso do CRIADOR do grupo, não da disciplina
+            if (owner.getCourse() != null) {
+                ownerCourseName = owner.getCourse().getName();
+            }
         }
 
-        // Garantir que discipline, course e university não são nulos
         var discipline = Objects.requireNonNull(group.getDiscipline(), "Discipline is required");
         var course = Objects.requireNonNull(discipline.getCourse(), "Course is required for discipline");
         var university = Objects.requireNonNull(course.getUniversity(), "University is required for course");
 
-        // ✅ Contar apenas membros ativos e únicos
         long uniqueMembersCount = group.getUserGroups().stream()
                 .filter(ug -> ug.getUser() != null
                         && ug.getUser().getId() != null
-                        && ug.getUser().isActive()) // ✅ Apenas usuários ativos
+                        && ug.getUser().isActive())
                 .map(ug -> ug.getUser().getId())
                 .distinct()
                 .count();
@@ -258,10 +251,11 @@ public class GroupService {
                 group.isActive(),
                 discipline.getId(),
                 discipline.getName(),
-                course.getName(),
+                // ✅ Curso do criador com fallback para curso da disciplina
+                ownerCourseName != null ? ownerCourseName : course.getName(),
                 university.getName(),
                 ownerId,
                 ownerName,
-                (int) uniqueMembersCount); // ✅ Contagem correta e precisa
+                (int) uniqueMembersCount);
     }
 }
