@@ -4,21 +4,21 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
-  Users, 
-  MapPin, 
-  User, 
-  Calendar, 
+import {
+  Users,
+  MapPin,
+  User,
+  Calendar,
   Clock,
   BookOpen,
   ArrowLeft,
   Loader2,
-  MessageSquare
+  MessageSquare,
+  Trash2,
 } from "lucide-react";
 import { fetchGroupDetail, joinGroup } from "@/services/groupService";
 import type { GroupDetail } from "@/services/groupService";
 import axios from "axios";
-
 
 const GroupView = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +27,7 @@ const GroupView = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [isAlreadyMember, setIsAlreadyMember] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
@@ -34,16 +35,18 @@ const GroupView = () => {
     const sendHeartbeat = async () => {
       const token = localStorage.getItem("hubdosaber-token");
       if (!token) return;
-
       try {
-        await axios.post("http://localhost:8080/api/users/me/heartbeat", {}, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await axios.post(
+          "http://localhost:8080/api/users/me/heartbeat",
+          {},
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
       } catch (error) {
         console.error("❌ Erro ao enviar heartbeat:", error);
       }
     };
-
     sendHeartbeat();
     const interval = setInterval(sendHeartbeat, 120000);
     return () => clearInterval(interval);
@@ -65,16 +68,19 @@ const GroupView = () => {
 
       try {
         setError(null);
-        
-        const userResponse = await axios.get("http://localhost:8080/api/users/me", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+
+        const userResponse = await axios.get(
+          "http://localhost:8080/api/users/me",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
         const userId = userResponse.data.id;
         setCurrentUserId(userId);
-        
+
         const data = await fetchGroupDetail(id);
         setGroupData(data);
-        
+
         let isMember = false;
         if (Array.isArray(data.members)) {
           isMember = data.members.some((member: any) => {
@@ -82,13 +88,12 @@ const GroupView = () => {
             return String(memberId) === String(userId);
           });
         }
-        
         setIsAlreadyMember(isMember);
       } catch (err: unknown) {
-        const error = err instanceof Error ? err : new Error("Erro desconhecido");
+        const error =
+          err instanceof Error ? err : new Error("Erro desconhecido");
         console.error("❌ Erro ao carregar grupo:", error);
         setError(error.message || "Erro ao carregar grupo");
-        
         if (error.message?.includes("login")) {
           setTimeout(() => navigate("/login"), 2000);
         }
@@ -106,7 +111,6 @@ const GroupView = () => {
       navigate("/login");
       return;
     }
-
     if (!id) {
       alert("ID do grupo não encontrado");
       return;
@@ -116,20 +120,48 @@ const GroupView = () => {
       setJoining(true);
       await joinGroup(id);
       alert("Você entrou no grupo com sucesso!");
-      
       const updatedData = await fetchGroupDetail(id);
       setGroupData(updatedData);
       setIsAlreadyMember(true);
     } catch (err: unknown) {
       const error = err instanceof Error ? err : new Error("Erro desconhecido");
-      console.error("❌ Erro ao entrar no grupo:", error);
       alert(error.message || "Erro ao entrar no grupo");
-      
-      if (error.message?.includes("login")) {
-        navigate("/login");
-      }
+      if (error.message?.includes("login")) navigate("/login");
     } finally {
       setJoining(false);
+    }
+  };
+
+  // ✅ Apagar grupo — só permitido se o usuário for o dono e estiver sozinho
+  const handleDelete = async () => {
+    if (!id || !groupData) return;
+
+    const uniqueCount = Array.isArray(groupData.members)
+      ? new Set(groupData.members.map((m: any) => m.id || m.userId)).size
+      : 0;
+
+    if (uniqueCount > 1) {
+      alert("Não é possível apagar o grupo enquanto há outros participantes.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Tem certeza que deseja apagar o grupo "${groupData.name}"? Esta ação não pode ser desfeita.`,
+    );
+    if (!confirmed) return;
+
+    const token = localStorage.getItem("hubdosaber-token");
+    try {
+      setDeleting(true);
+      await axios.delete(`http://localhost:8080/api/group/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      alert("Grupo apagado com sucesso!");
+      navigate("/dashboard");
+    } catch (err: any) {
+      alert(err.response?.data || "Erro ao apagar o grupo.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -147,16 +179,16 @@ const GroupView = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-background">
-        {/* ✅ Header corrigido — sem duplicidade */}
         <header className="border-b bg-card px-6 py-4">
-          <div className="flex items-center justify-between max-w-7xl mx-auto">
-            <div className="flex items-center gap-3">
-              <img src="/logo.png" alt="Hub do Saber" className="w-10 h-10 rounded-lg" />
-              <span className="font-semibold text-lg">Hub do Saber</span>
-            </div>
+          <div className="flex items-center gap-3 max-w-7xl mx-auto">
+            <img
+              src="/logo.png"
+              alt="Hub do Saber"
+              className="w-10 h-10 rounded-lg"
+            />
+            <span className="font-semibold text-lg">Hub do Saber</span>
           </div>
         </header>
-
         <main className="max-w-7xl mx-auto px-6 py-12">
           <Card className="p-12 text-center border-red-200 bg-red-50">
             <p className="text-xl text-red-700 mb-4">{error}</p>
@@ -179,31 +211,49 @@ const GroupView = () => {
             .map((member: any) => {
               const memberId = member.id || member.userId || member.user?.id;
               return [memberId, member];
-            })
-        ).values()
+            }),
+        ).values(),
       )
     : [];
 
   const participantsCount = uniqueMembers.length;
   const availableSlots = Math.max(groupData.maxMembers - participantsCount, 0);
 
+  // ✅ Verifica se o usuário logado é o dono
+  const isOwner = String(groupData.ownerId) === String(currentUserId);
+
+  // ✅ Pode apagar somente se for dono e estiver sozinho
+  const canDelete = isOwner && participantsCount <= 1;
+
   return (
     <div className="min-h-screen bg-background">
-      {/* ✅ Header corrigido — sem duplicidade */}
       <header className="border-b bg-card px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Hub do Saber" className="w-20 h-20 rounded-lg" />
+            <img
+              src="/logo.png"
+              alt="Hub do Saber"
+              className="w-20 h-20 rounded-lg"
+            />
             <span className="font-semibold text-lg">Hub do Saber</span>
           </div>
           <nav className="flex items-center gap-6">
-            <Link to="/dashboard" className="text-muted-foreground hover:text-primary">
+            <Link
+              to="/dashboard"
+              className="text-muted-foreground hover:text-primary"
+            >
               Grupos
             </Link>
-            <Link to="/profile" className="text-muted-foreground hover:text-primary">
+            <Link
+              to="/profile"
+              className="text-muted-foreground hover:text-primary"
+            >
               Perfil
             </Link>
-            <Button onClick={() => navigate("/create-group")} className="bg-black text-white">
+            <Button
+              onClick={() => navigate("/create-group")}
+              className="bg-black text-white"
+            >
               Criar Grupo
             </Button>
           </nav>
@@ -221,15 +271,24 @@ const GroupView = () => {
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Coluna principal */}
           <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <h1 className="text-3xl font-bold mb-2">{groupData.name}</h1>
+                    <h1 className="text-3xl font-bold mb-2">
+                      {groupData.name}
+                    </h1>
                     <Badge variant="secondary" className="mb-4">
                       {groupData.disciplineName}
                     </Badge>
+                    {/* ✅ Badge de Monitoria */}
+                    {groupData.monitoring && (
+                      <Badge variant="outline" className="ml-2 mb-4">
+                        🎓 Monitoria
+                      </Badge>
+                    )}
                   </div>
                   <div className="w-20 h-20 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg flex items-center justify-center text-4xl">
                     📚
@@ -240,7 +299,7 @@ const GroupView = () => {
                   {groupData.description}
                 </p>
 
-                <div className="flex gap-3">
+                <div className="flex gap-3 flex-wrap">
                   {isAlreadyMember ? (
                     <>
                       <Button
@@ -250,7 +309,10 @@ const GroupView = () => {
                         <MessageSquare className="h-4 w-4 mr-2" />
                         Abrir Chat do Grupo
                       </Button>
-                      <Badge variant="outline" className="px-4 py-2 text-sm flex items-center">
+                      <Badge
+                        variant="outline"
+                        className="px-4 py-2 text-sm flex items-center"
+                      >
                         ✓ Você é membro
                       </Badge>
                     </>
@@ -274,6 +336,36 @@ const GroupView = () => {
                         </>
                       )}
                     </Button>
+                  )}
+
+                  {/* ✅ Botão apagar — só aparece para o dono sozinho */}
+                  {canDelete && (
+                    <Button
+                      onClick={handleDelete}
+                      disabled={deleting}
+                      variant="destructive"
+                      className="flex items-center gap-2"
+                    >
+                      {deleting ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Apagando...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="h-4 w-4" />
+                          Apagar Grupo
+                        </>
+                      )}
+                    </Button>
+                  )}
+
+                  {/* ✅ Aviso se é dono mas há outros membros */}
+                  {isOwner && !canDelete && (
+                    <p className="text-xs text-muted-foreground w-full mt-1">
+                      ⚠️ Para apagar o grupo, todos os outros membros precisam
+                      sair primeiro.
+                    </p>
                   )}
                 </div>
               </CardContent>
@@ -303,12 +395,15 @@ const GroupView = () => {
                 <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                   <MapPin className="h-5 w-5 text-primary" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Universidade</p>
+                    <p className="text-sm text-muted-foreground">
+                      Universidade
+                    </p>
                     <p className="font-medium">{groupData.universityName}</p>
                   </div>
                 </div>
 
-                {groupData.schedule && (
+                {/* ✅ Horário — APENAS para grupos de monitoria */}
+                {groupData.monitoring && groupData.schedule && (
                   <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                     <Clock className="h-5 w-5 text-primary" />
                     <div>
@@ -321,6 +416,7 @@ const GroupView = () => {
             </Card>
           </div>
 
+          {/* Coluna lateral */}
           <div className="space-y-6">
             <Card>
               <CardHeader>
@@ -335,7 +431,8 @@ const GroupView = () => {
                     <div>
                       <p className="text-2xl font-bold">{participantsCount}</p>
                       <p className="text-sm text-muted-foreground">
-                        {groupData.onlineMembers || 0} online de {participantsCount} membros
+                        {groupData.onlineMembers || 0} online de{" "}
+                        {participantsCount} membros
                       </p>
                     </div>
                     <Users className="h-8 w-8 text-muted-foreground" />
@@ -343,7 +440,9 @@ const GroupView = () => {
 
                   <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
                     <div>
-                      <p className="text-2xl font-bold text-blue-600">{availableSlots}</p>
+                      <p className="text-2xl font-bold text-blue-600">
+                        {availableSlots}
+                      </p>
                       <p className="text-sm text-blue-700">Vagas disponíveis</p>
                     </div>
                     <Calendar className="h-8 w-8 text-blue-600" />
@@ -366,7 +465,9 @@ const GroupView = () => {
 
                 {uniqueMembers.length > 0 && (
                   <div className="mt-6">
-                    <h4 className="font-semibold mb-3 text-sm">Membros do grupo</h4>
+                    <h4 className="font-semibold mb-3 text-sm">
+                      Membros do grupo
+                    </h4>
                     <div className="space-y-2 max-h-64 overflow-y-auto">
                       {uniqueMembers.map((member: any) => (
                         <div
@@ -382,7 +483,9 @@ const GroupView = () => {
                               {member.name?.[0]?.toUpperCase() || "U"}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="text-sm">{member.name || "Usuário"}</span>
+                          <span className="text-sm">
+                            {member.name || "Usuário"}
+                          </span>
                         </div>
                       ))}
                     </div>

@@ -68,4 +68,17 @@ public class GroupController {
         groupService.updateGroup(groupId, updateGroupRequest, userId);
         return ResponseEntity.ok().build();
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteGroup(
+            @PathVariable("id") String groupId,
+            @AuthenticationPrincipal Jwt principal) {
+        try {
+            groupService.deleteGroup(groupId, principal.getSubject());
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 }

@@ -258,4 +258,31 @@ public class GroupService {
                 ownerName,
                 (int) uniqueMembersCount);
     }
+
+    @Transactional
+    public void deleteGroup(String groupId, String userId) {
+        StudyGroup group = groupRepository.findGroupDetailById(UUID.fromString(groupId))
+                .orElseThrow(() -> new RuntimeException("Grupo não encontrado"));
+
+        boolean isOwner = group.getUserGroups().stream()
+                .anyMatch(ug -> ug.getType() == UserGroupType.OWNER
+                        && ug.getUser().getId().toString().equals(userId));
+
+        if (!isOwner) {
+            throw new RuntimeException("Apenas o dono pode apagar o grupo");
+        }
+
+        long otherMembers = group.getUserGroups().stream()
+                .filter(ug -> ug.getType() != UserGroupType.OWNER)
+                .count();
+
+        if (otherMembers > 0) {
+            throw new RuntimeException(
+                    "Não é possível apagar o grupo com outros participantes");
+        }
+
+        userGroupRepository.deleteAll(group.getUserGroups());
+        groupRepository.delete(group);
+    }
+
 }

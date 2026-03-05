@@ -4,10 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Upload, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import axiosInstance from "@/services/axiosConfig";
 import { getUserProfile } from "@/services/userService";
 
@@ -25,17 +31,13 @@ const CreateGroup = () => {
   const [disciplineId, setDisciplineId] = useState("");
   const [maxMembers, setMaxMembers] = useState(10);
   const [hasMonitoring, setHasMonitoring] = useState(true);
-  const [coverImage, setCoverImage] = useState<File | null>(null);
-  const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [loadingDisciplines, setLoadingDisciplines] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // ✅ Buscar disciplinas filtradas pelo curso do usuário logado
   useEffect(() => {
     const fetchDisciplines = async () => {
       try {
-        // 1. Buscar perfil para obter o courseId
         const profile = await getUserProfile();
         const courseId = profile.course?.id;
 
@@ -46,15 +48,16 @@ const CreateGroup = () => {
           return;
         }
 
-        console.log("🎓 CourseId do usuário:", courseId);
-
-        // 2. Buscar disciplinas do curso do usuário
-        const response = await axiosInstance.get(`/discipline/course/${courseId}`);
+        const response = await axiosInstance.get(
+          `/discipline/course/${courseId}`,
+        );
         setDisciplines(response.data);
-        console.log("✅ Disciplinas do curso carregadas:", response.data.length);
+        console.log(
+          "✅ Disciplinas do curso carregadas:",
+          response.data.length,
+        );
       } catch (error) {
         console.error("❌ Erro ao carregar disciplinas:", error);
-        // Fallback: buscar todas se o endpoint filtrado não existir
         try {
           const fallback = await axiosInstance.get("/discipline/all");
           setDisciplines(fallback.data);
@@ -70,26 +73,6 @@ const CreateGroup = () => {
     fetchDisciplines();
   }, []);
 
-  // ✅ Converter imagem para Base64
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-    });
-  };
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setCoverImage(file);
-      // Preview da imagem
-      const base64 = await fileToBase64(file);
-      setCoverImagePreview(base64);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -101,22 +84,13 @@ const CreateGroup = () => {
     setSubmitting(true);
 
     try {
-      // ✅ Converter imagem para Base64 se existir
-      let imageBase64: string | null = null;
-      if (coverImage) {
-        imageBase64 = await fileToBase64(coverImage);
-      }
-
       const payload = {
         name: groupName,
         description: description,
         disciplineId: disciplineId,
         maxMembers: maxMembers,
         monitoring: hasMonitoring,
-        image: imageBase64, // ✅ Enviando imagem
       };
-
-      console.log("📤 Enviando dados:", { ...payload, image: imageBase64 ? "BASE64_PRESENT" : null });
 
       const response = await axiosInstance.post("/group", payload);
       const newGroupId = response.data;
@@ -126,7 +100,10 @@ const CreateGroup = () => {
       navigate(`/group/${newGroupId}`);
     } catch (error: any) {
       console.error("❌ Erro ao criar grupo:", error);
-      const errorMessage = error.response?.data?.message || error.response?.data || "Erro ao criar o grupo.";
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data ||
+        "Erro ao criar o grupo.";
       alert(`Erro: ${errorMessage}`);
     } finally {
       setSubmitting(false);
@@ -151,8 +128,18 @@ const CreateGroup = () => {
             <span className="font-semibold text-lg">Hub do Saber</span>
           </div>
           <nav className="flex items-center gap-6">
-            <Link to="/dashboard" className="text-muted-foreground hover:text-primary">Grupos</Link>
-            <Link to="/profile" className="text-muted-foreground hover:text-primary">Perfil</Link>
+            <Link
+              to="/dashboard"
+              className="text-muted-foreground hover:text-primary"
+            >
+              Grupos
+            </Link>
+            <Link
+              to="/profile"
+              className="text-muted-foreground hover:text-primary"
+            >
+              Perfil
+            </Link>
             <Button onClick={() => navigate("/dashboard")} variant="outline">
               Cancelar
             </Button>
@@ -162,17 +149,22 @@ const CreateGroup = () => {
 
       <main className="max-w-2xl mx-auto px-6 py-12">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Crie seu grupo de estudos...</h1>
+          <h1 className="text-3xl font-bold mb-2">
+            Crie seu grupo de estudos...
+          </h1>
         </div>
 
         <Card className="bg-card/50 border-2">
           <CardContent className="p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Left Column */}
+                {/* Coluna Esquerda */}
                 <div className="space-y-6">
                   <div>
-                    <Label htmlFor="groupName" className="text-sm font-medium text-blue-600">
+                    <Label
+                      htmlFor="groupName"
+                      className="text-sm font-medium text-blue-600"
+                    >
                       Nome do Grupo *
                     </Label>
                     <Input
@@ -186,7 +178,10 @@ const CreateGroup = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="description" className="text-sm font-medium text-blue-600">
+                    <Label
+                      htmlFor="description"
+                      className="text-sm font-medium text-blue-600"
+                    >
                       Descrição *
                     </Label>
                     <Textarea
@@ -200,7 +195,10 @@ const CreateGroup = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="subject" className="text-sm font-medium text-blue-600">
+                    <Label
+                      htmlFor="subject"
+                      className="text-sm font-medium text-blue-600"
+                    >
                       Matéria *
                     </Label>
                     {loadingDisciplines ? (
@@ -209,7 +207,11 @@ const CreateGroup = () => {
                         Carregando disciplinas...
                       </div>
                     ) : (
-                      <Select value={disciplineId} onValueChange={setDisciplineId} required>
+                      <Select
+                        value={disciplineId}
+                        onValueChange={setDisciplineId}
+                        required
+                      >
                         <SelectTrigger className="mt-2">
                           <SelectValue placeholder="Selecione a matéria" />
                         </SelectTrigger>
@@ -220,8 +222,12 @@ const CreateGroup = () => {
                             </SelectItem>
                           ) : (
                             disciplines.map((discipline) => (
-                              <SelectItem key={discipline.id} value={discipline.id}>
-                                {discipline.name} ({discipline.code}) - {discipline.semester}º período
+                              <SelectItem
+                                key={discipline.id}
+                                value={discipline.id}
+                              >
+                                {discipline.name} ({discipline.code}) -{" "}
+                                {discipline.semester}º período
                               </SelectItem>
                             ))
                           )}
@@ -231,10 +237,12 @@ const CreateGroup = () => {
                   </div>
                 </div>
 
-                {/* Right Column */}
+                {/* Coluna Direita */}
                 <div className="space-y-6">
                   <div>
-                    <Label className="text-sm font-medium">Número Máximo de Participantes *</Label>
+                    <Label className="text-sm font-medium">
+                      Número Máximo de Participantes *
+                    </Label>
                     <RadioGroup
                       defaultValue="5-10"
                       onValueChange={handleParticipantsChange}
@@ -242,15 +250,21 @@ const CreateGroup = () => {
                     >
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="5-10" id="5-10" />
-                        <Label htmlFor="5-10" className="text-sm">5-10</Label>
+                        <Label htmlFor="5-10" className="text-sm">
+                          5-10
+                        </Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="10-15" id="10-15" />
-                        <Label htmlFor="10-15" className="text-sm">10-15</Label>
+                        <Label htmlFor="10-15" className="text-sm">
+                          10-15
+                        </Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="15-20" id="15-20" />
-                        <Label htmlFor="15-20" className="text-sm">15-20</Label>
+                        <Label htmlFor="15-20" className="text-sm">
+                          15-20
+                        </Label>
                       </div>
                     </RadioGroup>
                   </div>
@@ -259,46 +273,24 @@ const CreateGroup = () => {
                     <Label className="text-sm font-medium">Monitoria</Label>
                     <RadioGroup
                       defaultValue="yes"
-                      onValueChange={(value) => setHasMonitoring(value === "yes")}
+                      onValueChange={(value) =>
+                        setHasMonitoring(value === "yes")
+                      }
                       className="mt-3 space-y-2"
                     >
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="yes" id="yes" />
-                        <Label htmlFor="yes" className="text-sm">Sim</Label>
+                        <Label htmlFor="yes" className="text-sm">
+                          Sim
+                        </Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="no" id="no" />
-                        <Label htmlFor="no" className="text-sm">Não</Label>
+                        <Label htmlFor="no" className="text-sm">
+                          Não
+                        </Label>
                       </div>
                     </RadioGroup>
-                  </div>
-
-                  <div>
-                    <Label className="text-sm font-medium">Foto de Capa (opcional)</Label>
-                    <div className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="hidden"
-                        id="cover-upload"
-                      />
-                      <Label htmlFor="cover-upload" className="cursor-pointer">
-                        {/* ✅ Preview da imagem selecionada */}
-                        {coverImagePreview ? (
-                          <img
-                            src={coverImagePreview}
-                            alt="Preview"
-                            className="w-full h-24 object-cover rounded-md mb-2"
-                          />
-                        ) : (
-                          <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                        )}
-                        <span className="text-sm text-gray-500">
-                          {coverImage ? coverImage.name : "Selecione uma imagem..."}
-                        </span>
-                      </Label>
-                    </div>
                   </div>
                 </div>
               </div>
