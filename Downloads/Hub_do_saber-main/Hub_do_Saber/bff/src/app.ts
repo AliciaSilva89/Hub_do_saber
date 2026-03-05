@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import authRoutes from "./routes/auth.routes"; 
 
 import groupRoutes from "./routes/group.routes";
 
@@ -15,6 +16,8 @@ app.use(express.json());
 
 // Cookies (se usar auth via cookie)
 app.use(cookieParser());
+
+
 
 // CORS (ajuste conforme seu front)
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:8081"; 

@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Upload, Loader2 } from "lucide-react";
 import axiosInstance from "@/services/axiosConfig";
+import { getUserProfile } from "@/services/userService";
 
 interface Discipline {
   id: string;
@@ -25,20 +26,42 @@ const CreateGroup = () => {
   const [maxMembers, setMaxMembers] = useState(10);
   const [hasMonitoring, setHasMonitoring] = useState(true);
   const [coverImage, setCoverImage] = useState<File | null>(null);
+  const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [loadingDisciplines, setLoadingDisciplines] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // Buscar disciplinas ao carregar o componente
+  // ✅ Buscar disciplinas filtradas pelo curso do usuário logado
   useEffect(() => {
     const fetchDisciplines = async () => {
       try {
-        const response = await axiosInstance.get("/discipline/all");
+        // 1. Buscar perfil para obter o courseId
+        const profile = await getUserProfile();
+        const courseId = profile.course?.id;
+
+        if (!courseId) {
+          console.warn("⚠️ Usuário sem curso vinculado");
+          alert("Seu perfil não possui um curso vinculado. Contate o suporte.");
+          setLoadingDisciplines(false);
+          return;
+        }
+
+        console.log("🎓 CourseId do usuário:", courseId);
+
+        // 2. Buscar disciplinas do curso do usuário
+        const response = await axiosInstance.get(`/discipline/course/${courseId}`);
         setDisciplines(response.data);
-        console.log("✅ Disciplinas carregadas:", response.data.length);
+        console.log("✅ Disciplinas do curso carregadas:", response.data.length);
       } catch (error) {
         console.error("❌ Erro ao carregar disciplinas:", error);
-        alert("Erro ao carregar disciplinas. Tente recarregar a página.");
+        // Fallback: buscar todas se o endpoint filtrado não existir
+        try {
+          const fallback = await axiosInstance.get("/discipline/all");
+          setDisciplines(fallback.data);
+          console.warn("⚠️ Usando fallback: todas as disciplinas");
+        } catch {
+          alert("Erro ao carregar disciplinas. Tente recarregar a página.");
+        }
       } finally {
         setLoadingDisciplines(false);
       }
@@ -46,6 +69,26 @@ const CreateGroup = () => {
 
     fetchDisciplines();
   }, []);
+
+  // ✅ Converter imagem para Base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+    });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setCoverImage(file);
+      // Preview da imagem
+      const base64 = await fileToBase64(file);
+      setCoverImagePreview(base64);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,20 +101,24 @@ const CreateGroup = () => {
     setSubmitting(true);
 
     try {
-      // Formato esperado pelo backend (CreateGroupRequest)
+      // ✅ Converter imagem para Base64 se existir
+      let imageBase64: string | null = null;
+      if (coverImage) {
+        imageBase64 = await fileToBase64(coverImage);
+      }
+
       const payload = {
         name: groupName,
         description: description,
         disciplineId: disciplineId,
         maxMembers: maxMembers,
-        monitoring: hasMonitoring
+        monitoring: hasMonitoring,
+        image: imageBase64, // ✅ Enviando imagem
       };
 
-      console.log("📤 Enviando dados:", payload);
+      console.log("📤 Enviando dados:", { ...payload, image: imageBase64 ? "BASE64_PRESENT" : null });
 
       const response = await axiosInstance.post("/group", payload);
-
-      // Backend retorna apenas o UUID como string
       const newGroupId = response.data;
 
       console.log("✅ Grupo criado com ID:", newGroupId);
@@ -86,21 +133,13 @@ const CreateGroup = () => {
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setCoverImage(file);
-    }
-  };
-
   const handleParticipantsChange = (value: string) => {
-    const [min, max] = value.split("-").map(Number);
+    const [, max] = value.split("-").map(Number);
     setMaxMembers(max);
   };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b bg-card px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
@@ -111,21 +150,16 @@ const CreateGroup = () => {
             />
             <span className="font-semibold text-lg">Hub do Saber</span>
           </div>
-          
           <nav className="flex items-center gap-6">
             <Link to="/dashboard" className="text-muted-foreground hover:text-primary">Grupos</Link>
             <Link to="/profile" className="text-muted-foreground hover:text-primary">Perfil</Link>
-            <Button 
-              onClick={() => navigate("/dashboard")}
-              variant="outline"
-            >
+            <Button onClick={() => navigate("/dashboard")} variant="outline">
               Cancelar
             </Button>
           </nav>
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-2xl mx-auto px-6 py-12">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">Crie seu grupo de estudos...</h1>
@@ -180,11 +214,17 @@ const CreateGroup = () => {
                           <SelectValue placeholder="Selecione a matéria" />
                         </SelectTrigger>
                         <SelectContent>
-                          {disciplines.map((discipline) => (
-                            <SelectItem key={discipline.id} value={discipline.id}>
-                              {discipline.name} ({discipline.code}) - {discipline.semester}º período
+                          {disciplines.length === 0 ? (
+                            <SelectItem value="none" disabled>
+                              Nenhuma disciplina encontrada
                             </SelectItem>
-                          ))}
+                          ) : (
+                            disciplines.map((discipline) => (
+                              <SelectItem key={discipline.id} value={discipline.id}>
+                                {discipline.name} ({discipline.code}) - {discipline.semester}º período
+                              </SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                     )}
@@ -195,9 +235,9 @@ const CreateGroup = () => {
                 <div className="space-y-6">
                   <div>
                     <Label className="text-sm font-medium">Número Máximo de Participantes *</Label>
-                    <RadioGroup 
-                      defaultValue="5-10" 
-                      onValueChange={handleParticipantsChange} 
+                    <RadioGroup
+                      defaultValue="5-10"
+                      onValueChange={handleParticipantsChange}
                       className="mt-3 space-y-2"
                     >
                       <div className="flex items-center space-x-2">
@@ -217,9 +257,9 @@ const CreateGroup = () => {
 
                   <div>
                     <Label className="text-sm font-medium">Monitoria</Label>
-                    <RadioGroup 
-                      defaultValue="yes" 
-                      onValueChange={(value) => setHasMonitoring(value === "yes")} 
+                    <RadioGroup
+                      defaultValue="yes"
+                      onValueChange={(value) => setHasMonitoring(value === "yes")}
                       className="mt-3 space-y-2"
                     >
                       <div className="flex items-center space-x-2">
@@ -244,7 +284,16 @@ const CreateGroup = () => {
                         id="cover-upload"
                       />
                       <Label htmlFor="cover-upload" className="cursor-pointer">
-                        <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                        {/* ✅ Preview da imagem selecionada */}
+                        {coverImagePreview ? (
+                          <img
+                            src={coverImagePreview}
+                            alt="Preview"
+                            className="w-full h-24 object-cover rounded-md mb-2"
+                          />
+                        ) : (
+                          <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                        )}
                         <span className="text-sm text-gray-500">
                           {coverImage ? coverImage.name : "Selecione uma imagem..."}
                         </span>
@@ -255,8 +304,8 @@ const CreateGroup = () => {
               </div>
 
               <div className="pt-4">
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="w-full bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white py-3 text-lg font-medium"
                   disabled={submitting || loadingDisciplines}
                 >

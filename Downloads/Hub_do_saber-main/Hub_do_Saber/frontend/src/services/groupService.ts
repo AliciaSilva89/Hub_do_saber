@@ -1,121 +1,94 @@
-import axiosInstance from "./axiosConfig";
+// src/services/groupService.ts
+import axios from "axios";
+
+const API_BASE = "http://localhost:8080/api";
 
 export interface Group {
   id: string;
   name: string;
   description: string;
+  ownerName: string;
   maxMembers: number;
-  monitoring: boolean;
-  active: boolean;
-  disciplineId: string;
+  currentMembers: number;
+  members: unknown[];
   disciplineName: string;
   courseName: string;
   universityName: string;
-  ownerId: string;
-  ownerName: string;
-  currentMembers: number;
-  schedule?: string;
-  members?: GroupMember[];
-}
-
-export interface GroupMember {
-  id: string;
-  name: string;
-  email: string;
-  type: string; // OWNER, MEMBER
-  courseName?: string;
+  schedule: string;
+  monitoring: boolean;
+  image?: string;
 }
 
 export interface GroupDetail extends Group {
-  members: GroupMember[];
+  disciplineId: string;
+  ownerId: string;
+  onlineMembers: number;
 }
 
-// ✅ CORRIGIDO: Buscar todos os grupos
-export const fetchAllGroups = async (): Promise<Group[]> => {
-  try {
-    // axiosInstance já tem /api no baseURL, então use apenas /group
-    const response = await axiosInstance.get("/group");
-    console.log("✅ Grupos carregados:", response.data);
-    return response.data;
-  } catch (error: any) {
-    console.error("❌ Erro ao buscar grupos:", error);
-    console.error("Status:", error.response?.status);
-    console.error("URL:", error.config?.url);
-    throw new Error(error.response?.data?.message || "Erro ao carregar grupos");
-  }
-};
+function getAuthHeaders() {
+  const token = localStorage.getItem("hubdosaber-token");
+  return { Authorization: `Bearer ${token}` };
+}
 
-// ✅ CORRIGIDO: Buscar grupos do usuário logado
-export const fetchMyGroups = async (): Promise<Group[]> => {
+function mapGroup(apiGroup: any): Group {
+  return {
+    id: apiGroup.id,
+    name: apiGroup.name,
+    description: apiGroup.description || "",
+    ownerName: apiGroup.ownerName || "Organizador",
+    maxMembers: apiGroup.maxMembers || 0,
+    currentMembers: apiGroup.currentMembers ?? 0,
+    members: Array.isArray(apiGroup.members) ? apiGroup.members : [],
+    disciplineName: apiGroup.disciplineName || "Geral",
+    courseName: apiGroup.courseName || "",
+    universityName: apiGroup.universityName || "Hub do Saber",
+    schedule: apiGroup.schedule || "A definir",
+    monitoring: apiGroup.monitoring || false,
+    image: apiGroup.image || null,
+  };
+}
+
+export async function fetchAllGroups(): Promise<Group[]> {
+  const response = await axios.get(`${API_BASE}/group`, {
+    headers: getAuthHeaders(),
+  });
+  const groups = Array.isArray(response.data) ? response.data : [];
+  console.log(`✅ Todos os grupos: ${groups.length}`);
+  return groups.map(mapGroup);
+}
+
+export async function fetchMyGroups(): Promise<Group[]> {
   try {
-    // Use o parâmetro mygroup=true conforme o GroupController
-    const response = await axiosInstance.get("/group", {
+    // ✅ CORRIGIDO: usa ?mygroup=true igual ao GroupController.java
+    const response = await axios.get(`${API_BASE}/group`, {
       params: { mygroup: true },
+      headers: getAuthHeaders(),
     });
-    console.log("✅ Meus grupos carregados:", response.data);
-    return response.data;
-  } catch (error: any) {
+    const groups = Array.isArray(response.data) ? response.data : [];
+    console.log(`✅ Meus grupos: ${groups.length}`);
+    return groups.map(mapGroup);
+  } catch (error) {
     console.error("❌ Erro ao buscar meus grupos:", error);
-    console.error("Status:", error.response?.status);
-    console.error("URL:", error.config?.url);
-    throw new Error(
-      error.response?.data?.message || "Erro ao carregar seus grupos"
-    );
+    return [];
   }
-};
+}
 
-// ✅ CORRIGIDO: Buscar detalhes de um grupo específico
-export const fetchGroupDetail = async (
-  groupId: string
-): Promise<GroupDetail> => {
-  try {
-    const response = await axiosInstance.get(`/group/${groupId}`);
-    console.log("✅ Detalhes do grupo carregados:", response.data);
-    return response.data;
-  } catch (error: any) {
-    console.error("❌ Erro ao buscar detalhes do grupo:", error);
-    throw new Error(
-      error.response?.data?.message || "Erro ao carregar detalhes do grupo"
-    );
-  }
-};
+export async function fetchGroupDetail(groupId: string): Promise<GroupDetail> {
+  const response = await axios.get(`${API_BASE}/group/${groupId}`, {
+    headers: getAuthHeaders(),
+  });
+  const g = response.data;
+  return {
+    ...mapGroup(g),
+    disciplineId: g.disciplineId || "",
+    ownerId: g.ownerId || "",
+    onlineMembers: g.onlineMembers || 0,
+  };
+}
 
-// ✅ CORRIGIDO: Entrar em um grupo
-export const joinGroup = async (groupId: string): Promise<void> => {
-  try {
-    // Conforme GroupController: /api/group/join?groupId=xxx
-    await axiosInstance.post("/group/join", null, {
-      params: { groupId },
-    });
-    console.log("✅ Entrou no grupo com sucesso");
-  } catch (error: any) {
-    console.error("❌ Erro ao entrar no grupo:", error);
-    throw new Error(error.response?.data?.message || "Erro ao entrar no grupo");
-  }
-};
-
-// ✅ CORRIGIDO: Criar um novo grupo
-export const createGroup = async (groupData: {
-  name: string;
-  description: string;
-  disciplineId: string;
-  maxMembers: number;
-  monitoring: boolean;
-}): Promise<string> => {
-  try {
-    const response = await axiosInstance.post("/group", groupData);
-    console.log("✅ Grupo criado com sucesso:", response.data);
-    return response.data; // Retorna o ID do grupo
-  } catch (error: any) {
-    console.error("❌ Erro ao criar grupo:", error);
-    throw new Error(error.response?.data?.message || "Erro ao criar grupo");
-  }
-};
-
-export default {
-  fetchAllGroups,
-  fetchMyGroups,
-  fetchGroupDetail,
-  joinGroup,
-  createGroup,
-};
+export async function joinGroup(groupId: string): Promise<void> {
+  await axios.post(`${API_BASE}/group/join`, null, {
+    params: { groupId },
+    headers: getAuthHeaders(),
+  });
+}

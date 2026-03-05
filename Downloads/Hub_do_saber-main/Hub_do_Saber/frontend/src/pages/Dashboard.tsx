@@ -4,7 +4,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Search, Users, MapPin, Loader2, RefreshCw } from "lucide-react";
 import { fetchAllGroups, fetchMyGroups, Group } from "@/services/groupService";
 
@@ -26,43 +32,46 @@ const Dashboard = () => {
     }
   }, [navigate]);
 
-  const loadGroups = useCallback(async (showRefreshing = false) => {
-    const token = localStorage.getItem("hubdosaber-token");
-    if (!token) {
-      navigate("/login", { replace: true });
-      return;
-    }
-
-    try {
-      if (showRefreshing) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
+  const loadGroups = useCallback(
+    async (showRefreshing = false) => {
+      const token = localStorage.getItem("hubdosaber-token");
+      if (!token) {
+        navigate("/login", { replace: true });
+        return;
       }
-      setError(null);
 
-      const [allGroupsData, myGroupsData] = await Promise.all([
-        fetchAllGroups(),
-        fetchMyGroups(),
-      ]);
+      try {
+        if (showRefreshing) {
+          setRefreshing(true);
+        } else {
+          setLoading(true);
+        }
+        setError(null);
 
-      setAllGroups(allGroupsData);
-      setMyGroups(myGroupsData);
-    } catch (err: any) {
-      console.error("❌ Erro ao carregar grupos:", err);
+        const [allGroupsData, myGroupsData] = await Promise.all([
+          fetchAllGroups(),
+          fetchMyGroups(),
+        ]);
 
-      if (err.response?.status === 401 || err.message?.includes("401")) {
-        setError("Sessão expirada. Redirecionando para login...");
-        localStorage.removeItem("hubdosaber-token");
-        setTimeout(() => navigate("/login", { replace: true }), 2000);
-      } else {
-        setError(err.message || "Erro ao carregar grupos. Tente novamente.");
+        setAllGroups(allGroupsData);
+        setMyGroups(myGroupsData);
+      } catch (err: any) {
+        console.error("❌ Erro ao carregar grupos:", err);
+
+        if (err.response?.status === 401 || err.message?.includes("401")) {
+          setError("Sessão expirada. Redirecionando para login...");
+          localStorage.removeItem("hubdosaber-token");
+          setTimeout(() => navigate("/login", { replace: true }), 2000);
+        } else {
+          setError(err.message || "Erro ao carregar grupos. Tente novamente.");
+        }
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [navigate]);
+    },
+    [navigate],
+  );
 
   useEffect(() => {
     const token = localStorage.getItem("hubdosaber-token");
@@ -80,14 +89,15 @@ const Dashboard = () => {
   const displayGroups = activeTab === "my" ? myGroups : allGroups;
 
   const subjects = Array.from(
-    new Set(displayGroups.map((group) => group.disciplineName).filter(Boolean))
+    new Set(displayGroups.map((group) => group.disciplineName).filter(Boolean)),
   ).sort();
 
   const filteredGroups = displayGroups.filter((group) => {
     const matchesSearch =
       group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       group.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSubject = !selectedSubject || group.disciplineName === selectedSubject;
+    const matchesSubject =
+      !selectedSubject || group.disciplineName === selectedSubject;
     return matchesSearch && matchesSubject;
   });
 
@@ -102,11 +112,17 @@ const Dashboard = () => {
       <header className="border-b bg-card px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Hub do Saber" className="w-20 h-20 rounded-lg" />
+            <img
+              src="/logo.png"
+              alt="Hub do Saber"
+              className="w-20 h-20 rounded-lg"
+            />
             <span className="font-semibold text-lg">Hub do Saber</span>
           </div>
           <nav className="flex items-center gap-6">
-            <Link to="/dashboard" className="text-foreground font-medium">Grupos</Link>
+            <Link to="/dashboard" className="text-foreground font-medium">
+              Grupos
+            </Link>
             <button
               onClick={() => navigate("/profile")}
               className="text-muted-foreground hover:text-primary transition-colors"
@@ -126,12 +142,16 @@ const Dashboard = () => {
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 py-16 px-6">
         <div className="max-w-7xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Encontre seu grupo!</h1>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+            Encontre seu grupo!
+          </h1>
           <p className="text-xl text-muted-foreground mb-8">
-            Conecte-se com pessoas que compartilham sua paixão pelo conhecimento.
+            Conecte-se com pessoas que compartilham sua paixão pelo
+            conhecimento.
           </p>
           <p className="text-lg text-muted-foreground">
-            Descubra grupos interativos e tenha acesso a aulas presenciais e online.
+            Descubra grupos interativos e tenha acesso a aulas presenciais e
+            online.
           </p>
         </div>
       </section>
@@ -173,7 +193,9 @@ const Dashboard = () => {
             title="Atualizar grupos"
             className="h-12 w-12"
           >
-            <RefreshCw className={`h-5 w-5 ${refreshing ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`h-5 w-5 ${refreshing ? "animate-spin" : ""}`}
+            />
           </Button>
         </div>
 
@@ -201,7 +223,11 @@ const Dashboard = () => {
             ))}
           </select>
           {(searchTerm || selectedSubject) && (
-            <Button variant="outline" onClick={handleClearFilters} className="whitespace-nowrap">
+            <Button
+              variant="outline"
+              onClick={handleClearFilters}
+              className="whitespace-nowrap"
+            >
               Limpar Filtros
             </Button>
           )}
@@ -221,7 +247,12 @@ const Dashboard = () => {
             <p className="font-semibold">❌ Erro ao carregar grupos</p>
             <p>{error}</p>
             {!error.includes("Sessão expirada") && (
-              <Button onClick={() => loadGroups()} variant="outline" size="sm" className="mt-2">
+              <Button
+                onClick={() => loadGroups()}
+                variant="outline"
+                size="sm"
+                className="mt-2"
+              >
                 Tentar novamente
               </Button>
             )}
@@ -240,8 +271,8 @@ const Dashboard = () => {
                   {activeTab === "my"
                     ? "Você ainda não participa de nenhum grupo."
                     : searchTerm || selectedSubject
-                    ? "Nenhum grupo encontrado com os filtros aplicados."
-                    : "Nenhum grupo disponível no momento."}
+                      ? "Nenhum grupo encontrado com os filtros aplicados."
+                      : "Nenhum grupo disponível no momento."}
                 </p>
                 <Button
                   onClick={() => {
@@ -250,14 +281,19 @@ const Dashboard = () => {
                   }}
                   variant="outline"
                 >
-                  {activeTab === "my" ? "Explorar todos os grupos" : "Limpar filtros"}
+                  {activeTab === "my"
+                    ? "Explorar todos os grupos"
+                    : "Limpar filtros"}
                 </Button>
               </Card>
             ) : (
               <>
                 <div className="mb-4 text-sm text-muted-foreground">
-                  Mostrando <span className="font-semibold">{filteredGroups.length}</span> grupo(s)
-                  {(searchTerm || selectedSubject) && " com os filtros aplicados"}
+                  Mostrando{" "}
+                  <span className="font-semibold">{filteredGroups.length}</span>{" "}
+                  grupo(s)
+                  {(searchTerm || selectedSubject) &&
+                    " com os filtros aplicados"}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -268,8 +304,16 @@ const Dashboard = () => {
                       onClick={() => navigate(`/group/${group.id}`)}
                     >
                       <CardHeader>
-                        <div className="w-full h-32 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 rounded-lg mb-4 flex items-center justify-center text-4xl">
-                          📚
+                        <div className="w-full h-32 rounded-lg mb-4 overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 flex items-center justify-center">
+                          {group.image ? (
+                            <img
+                              src={group.image}
+                              alt={group.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-4xl">📚</span>
+                          )}
                         </div>
                         <CardTitle className="text-xl">{group.name}</CardTitle>
                         <CardDescription className="line-clamp-2">
@@ -309,7 +353,9 @@ const Dashboard = () => {
                           {group.universityName && (
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                               <MapPin className="h-4 w-4 flex-shrink-0" />
-                              <span className="truncate">{group.universityName}</span>
+                              <span className="truncate">
+                                {group.universityName}
+                              </span>
                             </div>
                           )}
 
