@@ -3,34 +3,43 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { fetchMyGroups } from "@/services/groupService";
 import { getUserProfile, uploadProfilePicture } from "@/services/userService";
-
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { 
-  Edit3, 
-  Save, 
-  CalendarIcon, 
-  Plus, 
-  Trash2, 
-  Clock, 
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Edit3,
+  Save,
+  CalendarIcon,
+  Plus,
+  Trash2,
+  Clock,
   Video,
   GraduationCap,
   BookOpen,
   Camera,
-  Loader2
+  Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -56,8 +65,8 @@ interface CalendarEvent {
   id: string;
   title: string;
   type: "TRABALHO" | "AULA" | "REUNIAO";
-  eventDate: string; // ISO string
-  eventTime: string; // HH:mm
+  eventDate: string;
+  eventTime: string;
   link?: string;
 }
 
@@ -70,16 +79,18 @@ const Profile = () => {
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [loadingEvents, setLoadingEvents] = useState(true);
-  
+
   const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
+    new Date(),
+  );
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
-  const [newEvent, setNewEvent] = useState({ 
-    title: "", 
-    type: "TRABALHO" as CalendarEvent["type"], 
-    date: new Date(), 
-    time: "", 
-    link: "" 
+  const [newEvent, setNewEvent] = useState({
+    title: "",
+    type: "TRABALHO" as CalendarEvent["type"],
+    date: new Date(),
+    time: "",
+    link: "",
   });
 
   const [userData, setUserData] = useState<UserData>({
@@ -90,14 +101,12 @@ const Profile = () => {
     profilePicture: undefined,
   });
 
-
   const handleLogout = () => {
-  localStorage.removeItem("hubdosaber-token");
-  navigate("/login");
-};
+    localStorage.removeItem("hubdosaber-token");
+    navigate("/login");
+  };
 
-
-  // ✅ Carregar eventos do backend
+  // ✅ Carregar eventos
   const loadEvents = async () => {
     const token = localStorage.getItem("hubdosaber-token");
     if (!token) return;
@@ -108,7 +117,6 @@ const Profile = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       setEvents(response.data);
-      console.log("✅ Eventos carregados:", response.data);
     } catch (error) {
       console.error("❌ Erro ao carregar eventos:", error);
     } finally {
@@ -116,7 +124,7 @@ const Profile = () => {
     }
   };
 
-  // ✅ Adicionar evento no backend
+  // ✅ Adicionar evento
   const handleAddEvent = async () => {
     if (!newEvent.title || !newEvent.time) {
       alert("Preencha o título e horário do evento");
@@ -139,20 +147,25 @@ const Profile = () => {
           eventTime: newEvent.time,
           link: newEvent.link || null,
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       setEvents((prev) => [...prev, response.data]);
       setIsAddEventOpen(false);
-      setNewEvent({ title: "", type: "TRABALHO", date: new Date(), time: "", link: "" });
-      console.log("✅ Evento criado:", response.data);
+      setNewEvent({
+        title: "",
+        type: "TRABALHO",
+        date: new Date(),
+        time: "",
+        link: "",
+      });
     } catch (error) {
       console.error("❌ Erro ao criar evento:", error);
       alert("Erro ao criar evento. Tente novamente.");
     }
   };
 
-  // ✅ Deletar evento do backend
+  // ✅ Deletar evento
   const handleDeleteEvent = async (eventId: string) => {
     const token = localStorage.getItem("hubdosaber-token");
     if (!token) return;
@@ -162,26 +175,25 @@ const Profile = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       setEvents((prev) => prev.filter((e) => e.id !== eventId));
-      console.log("✅ Evento deletado");
     } catch (error) {
       console.error("❌ Erro ao deletar evento:", error);
       alert("Erro ao deletar evento.");
     }
   };
 
-  // ✅ Obter eventos de uma data específica
+  // ✅ Função pura — só filtra por data
   const getEventsForDate = (date: Date) => {
-    const dateStr = format(date, "yyyy-MM-dd");
-    return events.filter((e) => e.eventDate === dateStr);
+    return events.filter((e) => e.eventDate === format(date, "yyyy-MM-dd"));
   };
 
-  // ✅ Verificar se uma data tem eventos (para destacar no calendário)
+  // ✅ Verificar se data tem eventos
   const hasEventsOnDate = (date: Date) => {
-    const dateStr = format(date, "yyyy-MM-dd");
-    return events.some((e) => e.eventDate === dateStr);
+    return events.some((e) => e.eventDate === format(date, "yyyy-MM-dd"));
   };
 
-  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -189,26 +201,19 @@ const Profile = () => {
       setUploadingPhoto(true);
       const newProfilePicture = await uploadProfilePicture(file);
       setUserData((prev) => ({ ...prev, profilePicture: newProfilePicture }));
-      console.log("✅ Foto de perfil atualizada com sucesso");
     } catch (err: any) {
-      console.error("❌ Erro ao fazer upload da foto:", err);
-      alert(err.message || "Erro ao atualizar foto de perfil. Tente novamente.");
+      alert(err.message || "Erro ao atualizar foto de perfil.");
     } finally {
       setUploadingPhoto(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
-  };
+  const triggerFileInput = () => fileInputRef.current?.click();
 
   useEffect(() => {
     const fetchData = async () => {
       const token = localStorage.getItem("hubdosaber-token");
-      
       if (!token) {
         navigate("/login");
         return;
@@ -216,7 +221,6 @@ const Profile = () => {
 
       try {
         const profileData = await getUserProfile();
-        
         setUserData({
           id: profileData.id,
           name: profileData.name || "Usuário",
@@ -228,8 +232,6 @@ const Profile = () => {
 
         const myGroupsData = await fetchMyGroups();
         setMyGroups(myGroupsData);
-
-        // ✅ Carregar eventos
         await loadEvents();
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
@@ -244,17 +246,12 @@ const Profile = () => {
 
   const handleSaveProfile = async () => {
     const token = localStorage.getItem("hubdosaber-token");
-    const headers = { Authorization: `Bearer ${token}` };
-    
     try {
       await axios.put(
         "http://localhost:8080/api/users/me",
-        {
-          name: userData.name,
-        },
-        { headers }
+        { name: userData.name },
+        { headers: { Authorization: `Bearer ${token}` } },
       );
-      
       setIsEditing(false);
     } catch (error: any) {
       console.error("Erro ao salvar perfil:", error.response?.data?.message);
@@ -265,16 +262,14 @@ const Profile = () => {
     setUserData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const getInitials = (name: string) => {
-    return name
+  const getInitials = (name: string) =>
+    name
       .split(" ")
       .map((n) => n[0])
       .join("")
       .toUpperCase()
       .substring(0, 2);
-  };
 
-  // ✅ Ícone baseado no tipo
   const getEventIcon = (type: string) => {
     switch (type) {
       case "AULA":
@@ -285,20 +280,6 @@ const Profile = () => {
         return <Video className="h-4 w-4" />;
       default:
         return <Clock className="h-4 w-4" />;
-    }
-  };
-
-  // ✅ Label em português
-  const getEventTypeLabel = (type: string) => {
-    switch (type) {
-      case "AULA":
-        return "📚 Aula";
-      case "TRABALHO":
-        return "💻 Trabalho";
-      case "REUNIAO":
-        return "📅 Reunião";
-      default:
-        return type;
     }
   };
 
@@ -314,21 +295,31 @@ const Profile = () => {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
-          {/* Logo e nome */}
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Hub do Saber" className="w-20 h-20 rounded-lg" />
+            <img
+              src="/logo.png"
+              alt="Hub do Saber"
+              className="w-20 h-20 rounded-lg"
+            />
             <span className="font-semibold text-lg">Hub do Saber</span>
           </div>
-          
-          {/* Navegação */}
           <nav className="flex items-center gap-4">
-            <Link to="/dashboard" className="text-muted-foreground hover:text-primary">
+            <Link
+              to="/dashboard"
+              className="text-muted-foreground hover:text-primary"
+            >
               Grupos
             </Link>
-            <Link to="/profile" className="text-muted-foreground hover:text-primary">
+            <Link
+              to="/profile"
+              className="text-muted-foreground hover:text-primary"
+            >
               Perfil
             </Link>
-            <Button onClick={() => navigate("/create-group")} className="bg-black text-white">
+            <Button
+              onClick={() => navigate("/create-group")}
+              className="bg-black text-white"
+            >
               Criar Grupo
             </Button>
             <Button
@@ -343,23 +334,22 @@ const Profile = () => {
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-8">
+        {/* Avatar */}
         <div className="flex items-center gap-4 mb-8">
           <div className="relative">
             <Avatar className="w-20 h-20 border-4 border-primary/20">
-              <AvatarImage 
-                src={userData.profilePicture || undefined} 
-                alt={userData.name} 
+              <AvatarImage
+                src={userData.profilePicture || undefined}
+                alt={userData.name}
               />
               <AvatarFallback className="text-2xl bg-gradient-to-br from-blue-500 to-purple-500 text-white">
                 {getInitials(userData.name)}
               </AvatarFallback>
             </Avatar>
-            
             <button
               onClick={triggerFileInput}
               disabled={uploadingPhoto}
               className="absolute bottom-0 right-0 bg-primary text-white p-1.5 rounded-full hover:bg-primary/90 transition-colors disabled:opacity-50 shadow-lg"
-              title="Alterar foto de perfil"
             >
               {uploadingPhoto ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -367,7 +357,6 @@ const Profile = () => {
                 <Camera className="h-4 w-4" />
               )}
             </button>
-            
             <input
               ref={fileInputRef}
               type="file"
@@ -376,7 +365,6 @@ const Profile = () => {
               className="hidden"
             />
           </div>
-          
           <div>
             <h1 className="text-2xl font-bold">{userData.name}</h1>
             <p className="text-muted-foreground">{userData.email}</p>
@@ -385,6 +373,7 @@ const Profile = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
+            {/* Informações do Perfil */}
             <Card>
               <CardContent className="p-6">
                 <div className="flex justify-between items-center mb-6">
@@ -418,15 +407,16 @@ const Profile = () => {
                     )}
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div>
                       <Label>Nome Completo</Label>
-                      <Input 
-                        value={userData.name} 
+                      <Input
+                        value={userData.name}
                         disabled={!isEditing}
-                        onChange={(e) => handleInputChange("name", e.target.value)} 
+                        onChange={(e) =>
+                          handleInputChange("name", e.target.value)
+                        }
                       />
                     </div>
                     <div>
@@ -460,6 +450,7 @@ const Profile = () => {
               </CardContent>
             </Card>
 
+            {/* Meus Grupos */}
             <div>
               <h2 className="text-2xl font-bold mb-6">Meus grupos</h2>
               {loadingGroups ? (
@@ -505,6 +496,7 @@ const Profile = () => {
             </div>
           </div>
 
+          {/* Agenda */}
           <div className="space-y-4">
             <Card>
               <CardHeader className="pb-2 flex flex-row items-center justify-between">
@@ -524,7 +516,7 @@ const Profile = () => {
                     <div className="space-y-4">
                       <div>
                         <Label>Título</Label>
-                        <Input 
+                        <Input
                           value={newEvent.title}
                           onChange={(e) =>
                             setNewEvent({ ...newEvent, title: e.target.value })
@@ -545,7 +537,9 @@ const Profile = () => {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="AULA">📚 Aula</SelectItem>
-                            <SelectItem value="TRABALHO">💻 Trabalho</SelectItem>
+                            <SelectItem value="TRABALHO">
+                              💻 Trabalho
+                            </SelectItem>
                             <SelectItem value="REUNIAO">📅 Reunião</SelectItem>
                           </SelectContent>
                         </Select>
@@ -558,7 +552,7 @@ const Profile = () => {
                               variant="outline"
                               className={cn(
                                 "w-full justify-start text-left font-normal",
-                                !newEvent.date && "text-muted-foreground"
+                                !newEvent.date && "text-muted-foreground",
                               )}
                             >
                               <CalendarIcon className="mr-2 h-4 w-4" />
@@ -584,7 +578,7 @@ const Profile = () => {
                       </div>
                       <div>
                         <Label>Horário</Label>
-                        <Input 
+                        <Input
                           type="time"
                           value={newEvent.time}
                           onChange={(e) =>
@@ -594,7 +588,7 @@ const Profile = () => {
                       </div>
                       <div>
                         <Label>Link (opcional)</Label>
-                        <Input 
+                        <Input
                           value={newEvent.link}
                           onChange={(e) =>
                             setNewEvent({ ...newEvent, link: e.target.value })
@@ -604,9 +598,7 @@ const Profile = () => {
                       </div>
                     </div>
                     <div className="flex justify-end gap-2 mt-4">
-                      <Button type="submit" onClick={handleAddEvent}>
-                        Adicionar Evento
-                      </Button>
+                      <Button onClick={handleAddEvent}>Adicionar Evento</Button>
                     </div>
                   </DialogContent>
                 </Dialog>
@@ -624,13 +616,12 @@ const Profile = () => {
                       onSelect={setSelectedDate}
                       className="rounded-md border"
                       locale={ptBR}
-                      modifiers={{
-                        hasEvent: (date) => hasEventsOnDate(date),
-                      }}
+                      modifiers={{ hasEvent: (date) => hasEventsOnDate(date) }}
                       modifiersClassNames={{
                         hasEvent: "bg-primary/20 font-bold",
                       }}
                     />
+
                     {selectedDate &&
                       getEventsForDate(selectedDate).length > 0 && (
                         <div className="mt-4 space-y-2">
@@ -639,24 +630,47 @@ const Profile = () => {
                             Eventos do dia (
                             {getEventsForDate(selectedDate).length})
                           </h4>
+
+                          {/* ✅ Renderização com link clicável */}
                           {getEventsForDate(selectedDate).map((event) => (
                             <div
                               key={event.id}
                               className="flex items-center justify-between p-3 bg-muted rounded-lg"
                             >
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
                                 {getEventIcon(event.type)}
-                                <span className="text-sm">
-                                  {event.title}{" "}
+                                <div className="flex flex-col min-w-0">
+                                  {event.link ? (
+                                    <a
+                                      href={event.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-sm font-medium text-primary hover:underline truncate flex items-center gap-1"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      {event.title}
+                                      <Video className="h-3 w-3 flex-shrink-0" />
+                                    </a>
+                                  ) : (
+                                    <span className="text-sm font-medium truncate">
+                                      {event.title}
+                                    </span>
+                                  )}
                                   <span className="text-xs text-muted-foreground">
-                                    ({event.eventTime})
+                                    {event.eventTime}
+                                    {event.link && (
+                                      <span className="ml-1 text-primary">
+                                        · clique para acessar
+                                      </span>
+                                    )}
                                   </span>
-                                </span>
+                                </div>
                               </div>
                               <Button
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => handleDeleteEvent(event.id)}
+                                className="flex-shrink-0"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
