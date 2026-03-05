@@ -253,7 +253,6 @@ const GroupChat = () => {
               <img src="/logo.png" alt="Hub do Saber" className="w-20 h-20 rounded-lg" />
               <span className="font-semibold text-lg">Hub do Saber</span>
             </div>
-            <span className="font-semibold text-lg">Hub do Saber</span>
           </div>
           <nav className="flex items-center gap-6">
             <Link to="/dashboard" className="text-muted-foreground hover:text-primary">

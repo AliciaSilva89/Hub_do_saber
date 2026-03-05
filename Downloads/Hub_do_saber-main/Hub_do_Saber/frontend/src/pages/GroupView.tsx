@@ -19,6 +19,7 @@ import { fetchGroupDetail, joinGroup } from "@/services/groupService";
 import type { GroupDetail } from "@/services/groupService";
 import axios from "axios";
 
+
 const GroupView = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -29,7 +30,6 @@ const GroupView = () => {
   const [isAlreadyMember, setIsAlreadyMember] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // ✅ ADICIONAR - Heartbeat para marcar presença
   useEffect(() => {
     const sendHeartbeat = async () => {
       const token = localStorage.getItem("hubdosaber-token");
@@ -39,18 +39,13 @@ const GroupView = () => {
         await axios.post("http://localhost:8080/api/users/me/heartbeat", {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        console.log("💓 Heartbeat enviado");
       } catch (error) {
         console.error("❌ Erro ao enviar heartbeat:", error);
       }
     };
 
-    // Enviar heartbeat imediatamente
     sendHeartbeat();
-
-    // Enviar heartbeat a cada 2 minutos
-    const interval = setInterval(sendHeartbeat, 120000); // 2 minutos
-
+    const interval = setInterval(sendHeartbeat, 120000);
     return () => clearInterval(interval);
   }, []);
 
@@ -71,36 +66,24 @@ const GroupView = () => {
       try {
         setError(null);
         
-        // Buscar dados do usuário logado
         const userResponse = await axios.get("http://localhost:8080/api/users/me", {
           headers: { Authorization: `Bearer ${token}` }
         });
         const userId = userResponse.data.id;
         setCurrentUserId(userId);
         
-        console.log("👤 ID do usuário logado:", userId);
-        
-        // Buscar dados do grupo
         const data = await fetchGroupDetail(id);
-        console.log("📦 Dados do grupo recebidos:", data);
-        console.log("👥 Membros do grupo:", data.members);
-        
         setGroupData(data);
         
-        // Verificar se o usuário já é membro
         let isMember = false;
-        
         if (Array.isArray(data.members)) {
           isMember = data.members.some((member: any) => {
             const memberId = member.id || member.userId || member.user?.id;
-            console.log("🔍 Comparando:", memberId, "com", userId);
-            return memberId === userId || memberId === String(userId) || String(memberId) === String(userId);
+            return String(memberId) === String(userId);
           });
         }
         
         setIsAlreadyMember(isMember);
-        console.log("✅ Usuário já é membro?", isMember);
-        
       } catch (err: unknown) {
         const error = err instanceof Error ? err : new Error("Erro desconhecido");
         console.error("❌ Erro ao carregar grupo:", error);
@@ -137,7 +120,6 @@ const GroupView = () => {
       const updatedData = await fetchGroupDetail(id);
       setGroupData(updatedData);
       setIsAlreadyMember(true);
-      
     } catch (err: unknown) {
       const error = err instanceof Error ? err : new Error("Erro desconhecido");
       console.error("❌ Erro ao entrar no grupo:", error);
@@ -165,13 +147,11 @@ const GroupView = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-background">
+        {/* ✅ Header corrigido — sem duplicidade */}
         <header className="border-b bg-card px-6 py-4">
           <div className="flex items-center justify-between max-w-7xl mx-auto">
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-3">
-                <img src="/logo.png" alt="Hub do Saber" className="w-10 h-10 rounded-lg" />
-                  <span className="font-semibold text-lg">Hub do Saber</span>
-                </div>
+              <img src="/logo.png" alt="Hub do Saber" className="w-10 h-10 rounded-lg" />
               <span className="font-semibold text-lg">Hub do Saber</span>
             </div>
           </div>
@@ -189,11 +169,9 @@ const GroupView = () => {
     );
   }
 
-  if (!groupData) {
-    return null;
-  }
+  if (!groupData) return null;
 
-  const uniqueMembers = Array.isArray(groupData.members) 
+  const uniqueMembers = Array.isArray(groupData.members)
     ? Array.from(
         new Map(
           groupData.members
@@ -206,21 +184,16 @@ const GroupView = () => {
       )
     : [];
 
-  console.log("📊 Membros únicos filtrados:", uniqueMembers);
-
   const participantsCount = uniqueMembers.length;
   const availableSlots = Math.max(groupData.maxMembers - participantsCount, 0);
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
+      {/* ✅ Header corrigido — sem duplicidade */}
       <header className="border-b bg-card px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-3">
             <img src="/logo.png" alt="Hub do Saber" className="w-20 h-20 rounded-lg" />
-            <span className="font-semibold text-lg">Hub do Saber</span>
-          </div>
             <span className="font-semibold text-lg">Hub do Saber</span>
           </div>
           <nav className="flex items-center gap-6">
@@ -237,7 +210,6 @@ const GroupView = () => {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-8">
         <Button
           variant="ghost"
@@ -249,9 +221,7 @@ const GroupView = () => {
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Main Info */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Hero Card */}
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-start justify-between mb-4">
@@ -270,7 +240,6 @@ const GroupView = () => {
                   {groupData.description}
                 </p>
 
-                {/* Action Buttons */}
                 <div className="flex gap-3">
                   {isAlreadyMember ? (
                     <>
@@ -310,7 +279,6 @@ const GroupView = () => {
               </CardContent>
             </Card>
 
-            {/* Group Details */}
             <Card>
               <CardHeader>
                 <CardTitle>Detalhes do Grupo</CardTitle>
@@ -353,9 +321,7 @@ const GroupView = () => {
             </Card>
           </div>
 
-          {/* Right Column - Sidebar */}
           <div className="space-y-6">
-            {/* Participants Card */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -369,7 +335,6 @@ const GroupView = () => {
                     <div>
                       <p className="text-2xl font-bold">{participantsCount}</p>
                       <p className="text-sm text-muted-foreground">
-                        {/* ✅ Mostrar membros online */}
                         {groupData.onlineMembers || 0} online de {participantsCount} membros
                       </p>
                     </div>
@@ -399,7 +364,6 @@ const GroupView = () => {
                   </div>
                 </div>
 
-                {/* Lista de Membros com fotos */}
                 {uniqueMembers.length > 0 && (
                   <div className="mt-6">
                     <h4 className="font-semibold mb-3 text-sm">Membros do grupo</h4>
@@ -409,11 +373,10 @@ const GroupView = () => {
                           key={member.id}
                           className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50"
                         >
-                          {/* ✅ Avatar com foto de perfil */}
                           <Avatar className="h-8 w-8">
-                            <AvatarImage 
-                              src={member.profilePicture || undefined} 
-                              alt={member.name} 
+                            <AvatarImage
+                              src={member.profilePicture || undefined}
+                              alt={member.name}
                             />
                             <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white text-xs">
                               {member.name?.[0]?.toUpperCase() || "U"}
