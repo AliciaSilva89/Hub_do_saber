@@ -50,4 +50,11 @@ public class AuthController {
 
         return new ResponseEntity<>(new TokenResponse(jwt), HttpStatus.CREATED);
     }
+    @PostMapping("/logout")
+public ResponseEntity<Void> logout(@RequestHeader("Authorization") String authHeader) {
+    // Aqui você adicionaria o token a uma blacklist (Redis, por exemplo)
+    // Por enquanto, o frontend cuida do logout
+    return ResponseEntity.noContent().build();
+}
+
 }

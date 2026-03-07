@@ -27,6 +27,11 @@ C:\Users\kasym\Downloads\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hub
 C:\Users\kasym\Downloads\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\event\repository\EventRepository.java
 C:\Users\kasym\Downloads\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\event\request\CreateEventRequest.java
 C:\Users\kasym\Downloads\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\event\service\EventService.java
+C:\Users\kasym\Downloads\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\feedback\controller\FeedbackController.java
+C:\Users\kasym\Downloads\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\feedback\dto\FeedbackDTO.java
+C:\Users\kasym\Downloads\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\feedback\model\Feedback.java
+C:\Users\kasym\Downloads\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\feedback\repository\FeedbackRepository.java
+C:\Users\kasym\Downloads\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\feedback\service\FeedbackService.java
 C:\Users\kasym\Downloads\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\group\controller\GroupController.java
 C:\Users\kasym\Downloads\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\group\controller\StudyGroupController.java
 C:\Users\kasym\Downloads\Hub_do_saber-main\Hub_do_Saber\src\main\java\br\com\hubdosaber\group\dto\StudyGroupDetailDTO.java
