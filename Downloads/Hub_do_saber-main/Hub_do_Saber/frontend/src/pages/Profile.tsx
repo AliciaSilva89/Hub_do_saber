@@ -276,7 +276,6 @@ const Profile = () => {
     );
   }
 
-  // ✅ ÚNICO return — Tabs integradas dentro do layout principal
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card px-6 py-4">
@@ -357,7 +356,6 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* ✅ Tabs integradas ao layout */}
         <Tabs defaultValue="perfil" className="w-full">
           <TabsList className="mb-6">
             <TabsTrigger value="perfil">Perfil</TabsTrigger>
@@ -365,7 +363,7 @@ const Profile = () => {
             <TabsTrigger value="feedback">Feedback</TabsTrigger>
           </TabsList>
 
-          {/* Aba: Perfil + Agenda */}
+          {/* Aba: Perfil */}
           <TabsContent value="perfil">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-8">
@@ -697,12 +695,13 @@ const Profile = () => {
             )}
           </TabsContent>
 
-          {/* ✅ Aba: Feedback */}
+          {/* ✅ Aba: Feedback — corrigido */}
           <TabsContent value="feedback">
             <FeedbackTab
               userId={userData.id ?? ""}
               authorName={userData.name}
               courseName={userData.courseName}
+              profilePicture={userData.profilePicture ?? ""}
             />
           </TabsContent>
         </Tabs>

@@ -10,7 +10,9 @@ export interface FeedbackDTO {
   rating: number;
   comment: string;
   createdAt?: string;
+  profilePicture?: string; // ✅ adicionar
 }
+
 
 const getHeaders = () => {
   const token = localStorage.getItem("hubdosaber-token");

@@ -20,7 +20,8 @@ public class FeedbackService {
                 .map(f -> new FeedbackDTO(
                         f.getId(), f.getUserId(), f.getAuthorName(),
                         f.getCourseName(), f.getRating(), f.getComment(),
-                        f.getCreatedAt().toString()))
+                        f.getCreatedAt().toString(),
+                        f.getProfilePicture())) 
                 .toList();
     }
 
@@ -31,10 +32,12 @@ public class FeedbackService {
         f.setCourseName(dto.courseName());
         f.setRating(dto.rating());
         f.setComment(dto.comment());
+        f.setProfilePicture(dto.profilePicture());
         Feedback saved = repo.save(f);
         return new FeedbackDTO(
                 saved.getId(), saved.getUserId(), saved.getAuthorName(),
                 saved.getCourseName(), saved.getRating(), saved.getComment(),
-                saved.getCreatedAt().toString());
+                saved.getCreatedAt().toString(),
+                saved.getProfilePicture()); 
     }
 }

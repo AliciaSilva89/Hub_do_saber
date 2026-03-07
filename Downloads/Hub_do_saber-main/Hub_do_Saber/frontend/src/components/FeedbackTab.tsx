@@ -15,6 +15,7 @@ interface FeedbackTabProps {
   userId: string;
   authorName: string;
   courseName: string;
+  profilePicture: string;
 }
 
 function StarRating({
@@ -83,6 +84,7 @@ export default function FeedbackTab({
   userId,
   authorName,
   courseName,
+  profilePicture,
 }: FeedbackTabProps) {
   const queryClient = useQueryClient();
   const [rating, setRating] = useState(0);
@@ -109,12 +111,14 @@ export default function FeedbackTab({
   const handleSubmit = () => {
     if (rating === 0 || !comment.trim()) return;
     mutation.mutate({
-      userId, // ✅ real
-      authorName, // ✅ real
-      courseName, // ✅ real
+      userId,
+      authorName,
+      courseName,
+      profilePicture, // ✅ adicionar
       rating,
       comment,
     });
+
   };
 
   return (
