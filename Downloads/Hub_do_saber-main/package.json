@@ -1,0 +1,20 @@
+{
+  "dependencies": {
+    "@types/jwt-decode": "^2.2.1",
+    "axios": "^1.12.2",
+    "jwt-decode": "^4.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  },
+  "name": "hub_do_saber-main",
+  "version": "1.0.0",
+  "description": "Sistema de gerenciamento de grupos de estudo para universidades. Desenvolvido em Spring Boot e PostgreSQL.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
