@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Loader2 } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import axiosInstance from "@/services/axiosConfig";
 import { getUserProfile } from "@/services/userService";
 import LogoLink from "@/components/LogoLink";
@@ -21,8 +21,8 @@ import LogoLink from "@/components/LogoLink";
 interface Discipline {
   id: string;
   name: string;
-  code: string;
-  semester: number;
+  code?: string;
+  semester?: number;
 }
 
 const CreateGroup = () => {
@@ -35,15 +35,21 @@ const CreateGroup = () => {
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [loadingDisciplines, setLoadingDisciplines] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [userCourseName, setUserCourseName] = useState("");
+
+  // ✅ Filtros
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedSemester, setSelectedSemester] = useState<string>("all");
 
   useEffect(() => {
     const fetchDisciplines = async () => {
       try {
         const profile = await getUserProfile();
         const courseId = profile.course?.id;
+        const courseName = profile.course?.name || "";
+        setUserCourseName(courseName);
 
         if (!courseId) {
-          console.warn("⚠️ Usuário sem curso vinculado");
           alert("Seu perfil não possui um curso vinculado. Contate o suporte.");
           setLoadingDisciplines(false);
           return;
@@ -53,16 +59,11 @@ const CreateGroup = () => {
           `/discipline/course/${courseId}`,
         );
         setDisciplines(response.data);
-        console.log(
-          "✅ Disciplinas do curso carregadas:",
-          response.data.length,
-        );
       } catch (error) {
         console.error("❌ Erro ao carregar disciplinas:", error);
         try {
           const fallback = await axiosInstance.get("/discipline/all");
           setDisciplines(fallback.data);
-          console.warn("⚠️ Usando fallback: todas as disciplinas");
         } catch {
           alert("Erro ao carregar disciplinas. Tente recarregar a página.");
         }
@@ -73,6 +74,25 @@ const CreateGroup = () => {
 
     fetchDisciplines();
   }, []);
+
+  // ✅ Extrai períodos disponíveis nas disciplinas
+  const availableSemesters = Array.from(
+    new Set(
+      disciplines
+        .map((d) => d.semester)
+        .filter((s): s is number => s !== undefined && s !== null),
+    ),
+  ).sort((a, b) => a - b);
+
+  // ✅ Filtra disciplinas por busca e período
+  const filteredDisciplines = disciplines.filter((d) => {
+    const matchesSearch = d.name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const matchesSemester =
+      selectedSemester === "all" || String(d.semester) === selectedSemester;
+    return matchesSearch && matchesSemester;
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,20 +107,17 @@ const CreateGroup = () => {
     try {
       const payload = {
         name: groupName,
-        description: description,
-        disciplineId: disciplineId,
-        maxMembers: maxMembers,
+        description,
+        disciplineId,
+        maxMembers,
         monitoring: hasMonitoring,
       };
 
       const response = await axiosInstance.post("/group", payload);
       const newGroupId = response.data;
-
-      console.log("✅ Grupo criado com ID:", newGroupId);
       alert("Grupo criado com sucesso!");
       navigate(`/group/${newGroupId}`);
     } catch (error: any) {
-      console.error("❌ Erro ao criar grupo:", error);
       const errorMessage =
         error.response?.data?.message ||
         error.response?.data ||
@@ -129,6 +146,12 @@ const CreateGroup = () => {
               Grupos
             </Link>
             <Link
+              to="/chats"
+              className="text-muted-foreground hover:text-primary"
+            >
+              Chats
+            </Link>
+            <Link
               to="/profile"
               className="text-muted-foreground hover:text-primary"
             >
@@ -146,6 +169,12 @@ const CreateGroup = () => {
           <h1 className="text-3xl font-bold mb-2">
             Crie seu grupo de estudos...
           </h1>
+          {userCourseName && (
+            <p className="text-sm text-muted-foreground">
+              Disciplinas do curso:{" "}
+              <span className="font-medium text-primary">{userCourseName}</span>
+            </p>
+          )}
         </div>
 
         <Card className="bg-card/50 border-2">
@@ -188,45 +217,94 @@ const CreateGroup = () => {
                     />
                   </div>
 
+                  {/* ✅ Seletor de Matéria com filtros */}
                   <div>
-                    <Label
-                      htmlFor="subject"
-                      className="text-sm font-medium text-blue-600"
-                    >
+                    <Label className="text-sm font-medium text-blue-600">
                       Matéria *
                     </Label>
+
                     {loadingDisciplines ? (
                       <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         Carregando disciplinas...
                       </div>
                     ) : (
-                      <Select
-                        value={disciplineId}
-                        onValueChange={setDisciplineId}
-                        required
-                      >
-                        <SelectTrigger className="mt-2">
-                          <SelectValue placeholder="Selecione a matéria" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {disciplines.length === 0 ? (
-                            <SelectItem value="none" disabled>
-                              Nenhuma disciplina encontrada
-                            </SelectItem>
-                          ) : (
-                            disciplines.map((discipline) => (
-                              <SelectItem
-                                key={discipline.id}
-                                value={discipline.id}
-                              >
-                                {discipline.name} ({discipline.code}) -{" "}
-                                {discipline.semester}º período
+                      <div className="mt-2 space-y-2">
+                        {/* ✅ Filtro por período */}
+                        {availableSemesters.length > 0 && (
+                          <Select
+                            value={selectedSemester}
+                            onValueChange={(v) => {
+                              setSelectedSemester(v);
+                              setDisciplineId(""); // limpa seleção ao mudar período
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Filtrar por período" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">
+                                Todos os períodos
                               </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
+                              {availableSemesters.map((s) => (
+                                <SelectItem key={s} value={String(s)}>
+                                  {s}º período
+                                </SelectItem>
+                              ))}
+                              <SelectItem value="optativa">
+                                Optativas
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+
+                        {/* ✅ Busca por nome */}
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Buscar disciplina..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-9"
+                          />
+                        </div>
+
+                        {/* ✅ Select de disciplinas filtradas */}
+                        <Select
+                          value={disciplineId}
+                          onValueChange={setDisciplineId}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a matéria" />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-60">
+                            {filteredDisciplines.length === 0 ? (
+                              <SelectItem value="none" disabled>
+                                Nenhuma disciplina encontrada
+                              </SelectItem>
+                            ) : (
+                              filteredDisciplines.map((discipline) => (
+                                <SelectItem
+                                  key={discipline.id}
+                                  value={discipline.id}
+                                >
+                                  {discipline.name}
+                                  {discipline.semester
+                                    ? ` — ${discipline.semester}º período`
+                                    : ""}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+
+                        {/* ✅ Contagem de resultados */}
+                        <p className="text-xs text-muted-foreground">
+                          {filteredDisciplines.length} disciplina(s)
+                          encontrada(s)
+                          {searchTerm && ` para "${searchTerm}"`}
+                        </p>
+                      </div>
                     )}
                   </div>
                 </div>
