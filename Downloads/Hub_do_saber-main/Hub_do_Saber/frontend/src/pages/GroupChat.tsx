@@ -12,6 +12,7 @@ import {
   Loader2,
   ArrowLeft,
   Smile,
+  Paperclip,
 } from "lucide-react";
 import { fetchGroupDetail } from "@/services/groupService";
 import axios from "axios";
@@ -62,6 +63,7 @@ const GroupChat = () => {
     maxMembers: 0,
   });
   const [userData, setUserData] = useState<UserData | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -102,7 +104,6 @@ const GroupChat = () => {
 
     try {
       setLoading(true);
-
       const userResponse = await axios.get(
         "http://localhost:8080/api/users/me",
         {
@@ -158,7 +159,7 @@ const GroupChat = () => {
         { content: newMessage, imageUrl: null },
         { headers: { Authorization: `Bearer ${token}` } },
       );
-      setMessages([...messages, response.data]);
+      setMessages((prev) => [...prev, response.data]);
       setNewMessage("");
     } catch (error) {
       console.error("❌ Erro ao enviar mensagem:", error);
@@ -175,12 +176,12 @@ const GroupChat = () => {
     }
   };
 
-  // ✅ Insere emoji no input
   const handleEmojiClick = (emojiData: EmojiClickData) => {
     setNewMessage((prev) => prev + emojiData.emoji);
     setShowEmojiPicker(false);
   };
 
+  // ✅ Upload de imagens
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !id || sending) return;
@@ -200,7 +201,7 @@ const GroupChat = () => {
             { content: "", imageUrl: reader.result as string },
             { headers: { Authorization: `Bearer ${token}` } },
           );
-          setMessages([...messages, response.data]);
+          setMessages((prev) => [...prev, response.data]);
         } catch (error) {
           console.error("❌ Erro ao enviar imagem:", error);
           alert("Erro ao enviar imagem. Tente novamente.");
@@ -209,17 +210,56 @@ const GroupChat = () => {
         }
       };
       reader.readAsDataURL(file);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (imageInputRef.current) imageInputRef.current.value = "";
     } catch (error) {
       console.error("❌ Erro ao processar imagem:", error);
       setSending(false);
     }
   };
 
-  const handleDownloadImage = (imageUrl: string, fileName: string) => {
+  // ✅ Upload de arquivos (PDF, DOC, ZIP, etc.)
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !id || sending) return;
+    const token = localStorage.getItem("hubdosaber-token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    const fileName = file.name;
+
+    try {
+      setSending(true);
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const payload = `file:${fileName}:${reader.result as string}`;
+          const response = await axios.post(
+            `http://localhost:8080/api/groups/${id}/messages`,
+            { content: "", imageUrl: payload },
+            { headers: { Authorization: `Bearer ${token}` } },
+          );
+          setMessages((prev) => [...prev, response.data]);
+        } catch (error) {
+          console.error("❌ Erro ao enviar arquivo:", error);
+          alert("Erro ao enviar arquivo. Tente novamente.");
+        } finally {
+          setSending(false);
+        }
+      };
+      reader.readAsDataURL(file);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } catch (error) {
+      console.error("❌ Erro ao processar arquivo:", error);
+      setSending(false);
+    }
+  };
+
+  const handleDownloadFile = (base64Data: string, fileName: string) => {
     const link = document.createElement("a");
-    link.href = imageUrl;
-    link.download = `${fileName}.png`;
+    link.href = base64Data;
+    link.download = fileName;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -306,7 +346,6 @@ const GroupChat = () => {
                 </div>
               </div>
             </div>
-
             <Button
               variant="ghost"
               size="icon"
@@ -338,6 +377,8 @@ const GroupChat = () => {
                     index === 0 ||
                     formatDate(messages[index - 1].createdAt) !==
                       formatDate(message.createdAt);
+
+                  const isFileMessage = message.imageUrl?.startsWith("file:");
 
                   return (
                     <div key={message.id}>
@@ -378,6 +419,7 @@ const GroupChat = () => {
                             </span>
                           </div>
 
+                          {/* Texto */}
                           {message.content && (
                             <div
                               className={`inline-block p-3 rounded-lg break-words ${
@@ -390,7 +432,60 @@ const GroupChat = () => {
                             </div>
                           )}
 
-                          {message.imageUrl && (
+                          {/* ✅ Arquivo (PDF, DOC, ZIP, etc.) */}
+                          {message.imageUrl &&
+                            isFileMessage &&
+                            (() => {
+                              const parts = message.imageUrl!.split(":");
+                              const fileName = parts[1];
+                              const base64Data = parts.slice(2).join(":");
+                              const ext = fileName
+                                .split(".")
+                                .pop()
+                                ?.toLowerCase();
+                              const icon =
+                                ext === "pdf"
+                                  ? "📄"
+                                  : ext === "doc" || ext === "docx"
+                                    ? "📝"
+                                    : ext === "zip" || ext === "rar"
+                                      ? "🗜️"
+                                      : ext === "xls" || ext === "xlsx"
+                                        ? "📊"
+                                        : "📎";
+
+                              return (
+                                <div
+                                  className={`flex items-center gap-3 p-3 rounded-lg border min-w-[220px] ${
+                                    isOwnMessage
+                                      ? "bg-blue-700 border-blue-500 text-white"
+                                      : "bg-muted border-border"
+                                  }`}
+                                >
+                                  <span className="text-2xl">{icon}</span>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium truncate">
+                                      {fileName}
+                                    </p>
+                                    <p className="text-xs opacity-70">
+                                      Clique para baixar
+                                    </p>
+                                  </div>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      handleDownloadFile(base64Data, fileName)
+                                    }
+                                  >
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              );
+                            })()}
+
+                          {/* ✅ Imagem */}
+                          {message.imageUrl && !isFileMessage && (
                             <div className="relative group">
                               <img
                                 src={message.imageUrl}
@@ -405,9 +500,9 @@ const GroupChat = () => {
                                 variant="secondary"
                                 className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
                                 onClick={() =>
-                                  handleDownloadImage(
+                                  handleDownloadFile(
                                     message.imageUrl!,
-                                    `imagem-${message.id}`,
+                                    `imagem-${message.id}.png`,
                                   )
                                 }
                               >
@@ -440,22 +535,44 @@ const GroupChat = () => {
           {/* Message Input */}
           <div className="border-t p-4 bg-card">
             <div className="flex gap-2 max-w-4xl mx-auto">
+              {/* Input oculto de imagem */}
               <input
                 type="file"
-                ref={fileInputRef}
+                ref={imageInputRef}
                 onChange={handleImageUpload}
                 accept="image/*"
                 className="hidden"
               />
 
-              {/* Botão de imagem */}
+              {/* Input oculto de arquivos */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.rar,.txt,.ppt,.pptx"
+                className="hidden"
+              />
+
+              {/* ✅ Botão de imagem */}
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => imageInputRef.current?.click()}
+                disabled={sending}
+                title="Enviar imagem"
+              >
+                <Image className="h-5 w-5" />
+              </Button>
+
+              {/* ✅ Botão de arquivo */}
               <Button
                 variant="outline"
                 size="icon"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={sending}
+                title="Enviar arquivo"
               >
-                <Image className="h-5 w-5" />
+                <Paperclip className="h-5 w-5" />
               </Button>
 
               {/* ✅ Botão de emoji */}
@@ -465,10 +582,10 @@ const GroupChat = () => {
                   size="icon"
                   onClick={() => setShowEmojiPicker((prev) => !prev)}
                   disabled={sending}
+                  title="Emojis"
                 >
                   <Smile className="h-5 w-5" />
                 </Button>
-
                 {showEmojiPicker && (
                   <div className="absolute bottom-12 left-0 z-50">
                     <EmojiPicker
@@ -517,7 +634,7 @@ const GroupChat = () => {
               className="absolute top-2 right-2"
               onClick={(e) => {
                 e.stopPropagation();
-                handleDownloadImage(selectedImage, `imagem-${Date.now()}`);
+                handleDownloadFile(selectedImage, `imagem-${Date.now()}.png`);
               }}
             >
               <Download className="h-4 w-4" />
