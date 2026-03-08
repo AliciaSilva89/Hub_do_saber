@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:8080/api"; // ← ADICIONADO /api AQUI
+const API_URL = import.meta.env.VITE_API_URL || "/api";
 
 let isRedirecting = false;
 
@@ -30,7 +30,7 @@ axiosInstance.interceptors.request.use(
   (error) => {
     console.error("❌ Erro no interceptor de requisição:", error);
     return Promise.reject(error);
-  }
+  },
 );
 
 // Interceptor de resposta
@@ -39,7 +39,7 @@ axiosInstance.interceptors.response.use(
     console.log(
       "✅ Resposta bem-sucedida:",
       response.config.url,
-      response.status
+      response.status,
     );
     return response;
   },
@@ -52,7 +52,6 @@ axiosInstance.interceptors.response.use(
     console.error("  URL:", url);
     console.error("  Mensagem:", error.response?.data);
 
-    // Só redireciona se for 401 e não estiver em páginas públicas
     if (
       status === 401 &&
       !isRedirecting &&
@@ -72,7 +71,7 @@ axiosInstance.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default axiosInstance;

@@ -1,4 +1,5 @@
 br\com\hubdosaber\course\repositoy\CourseRepository.class
+br\com\hubdosaber\feedback\repository\FeedbackRepository.class
 br\com\hubdosaber\group\model\UserGroup.class
 br\com\hubdosaber\event\dto\EventDTO.class
 br\com\hubdosaber\university\repository\UniversityRepository.class
@@ -13,6 +14,7 @@ br\com\hubdosaber\auth\service\TokenService.class
 br\com\hubdosaber\event\repository\EventRepository.class
 br\com\hubdosaber\group\model\UserGroupType.class
 br\com\hubdosaber\user\request\UpdateUserRequest.class
+br\com\hubdosaber\feedback\controller\FeedbackController.class
 br\com\hubdosaber\user\controller\UserController.class
 br\com\hubdosaber\course\dto\CourseDTO.class
 br\com\hubdosaber\event\model\Event.class
@@ -26,6 +28,8 @@ br\com\hubdosaber\group\dto\StudyGroupDTO.class
 br\com\hubdosaber\auth\controller\AuthController.class
 br\com\hubdosaber\university\service\UniversityService.class
 br\com\hubdosaber\auth\request\LoginRequest.class
+br\com\hubdosaber\feedback\dto\FeedbackDTO.class
+br\com\hubdosaber\feedback\model\Feedback.class
 br\com\hubdosaber\group\controller\GroupController.class
 br\com\hubdosaber\user\dto\UserDTO$DisciplineDTO.class
 br\com\hubdosaber\user\dto\UserDTO$CourseDTO.class
@@ -55,6 +59,7 @@ br\com\hubdosaber\user\mapper\UserMapper.class
 br\com\hubdosaber\university\model\University.class
 br\com\hubdosaber\group\service\GroupService.class
 br\com\hubdosaber\course\controller\CourseController.class
+br\com\hubdosaber\feedback\service\FeedbackService.class
 br\com\hubdosaber\event\controller\EventController.class
 br\com\hubdosaber\group\controller\StudyGroupController.class
 br\com\hubdosaber\university\mapper\UniversityMapper.class

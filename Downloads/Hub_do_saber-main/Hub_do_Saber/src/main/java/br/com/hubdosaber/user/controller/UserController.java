@@ -18,9 +18,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/users") // ← removido /api
 @AllArgsConstructor
-@CrossOrigin(origins = "http://localhost:8081")
+// ← removido @CrossOrigin (CorsConfig.java resolve globalmente)
 public class UserController {
 
     private final UserService userService;

@@ -1,6 +1,19 @@
+// src/services/feedbackService.ts
 import axios from "axios";
 
-const BFF_URL = import.meta.env.VITE_BFF_URL || "http://localhost:3000";
+// ✅ Instância separada para o BFF — sem o /api do axiosInstance
+const bffInstance = axios.create({
+  baseURL: "/bff",
+  timeout: 10000,
+  headers: { "Content-Type": "application/json" },
+});
+
+// Adiciona token automaticamente
+bffInstance.interceptors.request.use((config) => {
+  const token = localStorage.getItem("hubdosaber-token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
 
 export interface FeedbackDTO {
   id?: number;
@@ -10,27 +23,17 @@ export interface FeedbackDTO {
   rating: number;
   comment: string;
   createdAt?: string;
-  profilePicture?: string; // ✅ adicionar
+  profilePicture?: string;
 }
 
-
-const getHeaders = () => {
-  const token = localStorage.getItem("hubdosaber-token");
-  return { Authorization: `Bearer ${token}` };
-};
-
 export const getFeedbacks = async (): Promise<FeedbackDTO[]> => {
-  const { data } = await axios.get(`${BFF_URL}/feedbacks`, {
-    headers: getHeaders(),
-  });
+  const { data } = await bffInstance.get("/feedbacks");
   return data;
 };
 
 export const createFeedback = async (
   dto: Omit<FeedbackDTO, "id" | "createdAt">,
 ): Promise<FeedbackDTO> => {
-  const { data } = await axios.post(`${BFF_URL}/feedbacks`, dto, {
-    headers: getHeaders(),
-  });
+  const { data } = await bffInstance.post("/feedbacks", dto);
   return data;
 };
