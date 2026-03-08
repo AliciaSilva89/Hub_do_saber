@@ -11,9 +11,11 @@ import {
   X,
   Loader2,
   ArrowLeft,
+  Smile,
 } from "lucide-react";
 import { fetchGroupDetail } from "@/services/groupService";
 import axios from "axios";
+import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 
 interface Message {
   id: string;
@@ -50,6 +52,7 @@ const GroupChat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [groupInfo, setGroupInfo] = useState<GroupInfo>({
     name: "Carregando...",
     avatar: "📚",
@@ -73,6 +76,18 @@ const GroupChat = () => {
     }, 3000);
     return () => clearInterval(interval);
   }, [id]);
+
+  // ✅ Fecha o picker ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest(".emoji-area")) {
+        setShowEmojiPicker(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const loadInitialData = async () => {
     const token = localStorage.getItem("hubdosaber-token");
@@ -158,6 +173,12 @@ const GroupChat = () => {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  // ✅ Insere emoji no input
+  const handleEmojiClick = (emojiData: EmojiClickData) => {
+    setNewMessage((prev) => prev + emojiData.emoji);
+    setShowEmojiPicker(false);
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -286,7 +307,6 @@ const GroupChat = () => {
               </div>
             </div>
 
-            {/* ✅ Engrenagem agora navega direto para /group/:id */}
             <Button
               variant="ghost"
               size="icon"
@@ -427,6 +447,8 @@ const GroupChat = () => {
                 accept="image/*"
                 className="hidden"
               />
+
+              {/* Botão de imagem */}
               <Button
                 variant="outline"
                 size="icon"
@@ -435,6 +457,29 @@ const GroupChat = () => {
               >
                 <Image className="h-5 w-5" />
               </Button>
+
+              {/* ✅ Botão de emoji */}
+              <div className="relative emoji-area">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setShowEmojiPicker((prev) => !prev)}
+                  disabled={sending}
+                >
+                  <Smile className="h-5 w-5" />
+                </Button>
+
+                {showEmojiPicker && (
+                  <div className="absolute bottom-12 left-0 z-50">
+                    <EmojiPicker
+                      onEmojiClick={handleEmojiClick}
+                      searchPlaceholder="Buscar emoji..."
+                      lazyLoadEmojis
+                    />
+                  </div>
+                )}
+              </div>
+
               <Input
                 placeholder="Digite sua mensagem..."
                 value={newMessage}
@@ -443,6 +488,7 @@ const GroupChat = () => {
                 disabled={sending}
                 className="flex-1"
               />
+
               <Button
                 onClick={handleSendMessage}
                 disabled={!newMessage.trim() || sending}

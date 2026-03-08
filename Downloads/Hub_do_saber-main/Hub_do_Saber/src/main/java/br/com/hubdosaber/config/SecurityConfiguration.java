@@ -20,12 +20,13 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.http.HttpMethod;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.List;
+
 
 @Configuration
 @EnableWebSecurity
@@ -123,6 +124,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/discipline/**").permitAll()
                         .requestMatchers("/api/disciplines/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/feedbacks").permitAll()
 
                         // OPTIONS sempre permitido para CORS preflight
                         .requestMatchers("OPTIONS", "/**").permitAll()
