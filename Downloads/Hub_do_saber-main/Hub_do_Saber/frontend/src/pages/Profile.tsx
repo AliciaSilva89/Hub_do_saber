@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { fetchMyGroups } from "@/services/groupService";
 import { getUserProfile, uploadProfilePicture } from "@/services/userService";
+import LogoLink from "@/components/LogoLink";
 import {
   Dialog,
   DialogContent,
@@ -40,6 +41,7 @@ import {
   BookOpen,
   Camera,
   Loader2,
+  AlertTriangle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -82,6 +84,10 @@ const Profile = () => {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [loadingEvents, setLoadingEvents] = useState(true);
 
+  // ✅ Estados para apagar conta
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     new Date(),
@@ -106,6 +112,29 @@ const Profile = () => {
   const handleLogout = () => {
     localStorage.removeItem("hubdosaber-token");
     navigate("/login");
+  };
+
+  // ✅ Função para apagar conta
+  const handleDeleteAccount = async () => {
+    const token = localStorage.getItem("hubdosaber-token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+    setDeletingAccount(true);
+    try {
+      await axios.delete("http://localhost:8080/api/users/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      localStorage.clear();
+      navigate("/login");
+    } catch (err) {
+      console.error("Erro ao apagar conta:", err);
+      alert("Não foi possível apagar a conta. Tente novamente.");
+    } finally {
+      setDeletingAccount(false);
+      setShowDeleteConfirm(false);
+    }
   };
 
   const loadEvents = async () => {
@@ -280,14 +309,7 @@ const Profile = () => {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center gap-3">
-            <img
-              src="/logo.png"
-              alt="Hub do Saber"
-              className="w-20 h-20 rounded-lg"
-            />
-            <span className="font-semibold text-lg">Hub do Saber</span>
-          </div>
+          <LogoLink size="lg" />
           <nav className="flex items-center gap-4">
             <Link
               to="/dashboard"
@@ -300,6 +322,12 @@ const Profile = () => {
               className="text-muted-foreground hover:text-primary"
             >
               Perfil
+            </Link>
+            <Link
+              to="/chats"
+              className="text-muted-foreground hover:text-primary"
+            >
+              Chats
             </Link>
             <Button
               onClick={() => navigate("/create-group")}
@@ -442,6 +470,74 @@ const Profile = () => {
                         </div>
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+
+                {/* ✅ Card: Zona de perigo */}
+                <Card className="border-red-200">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <AlertTriangle className="h-5 w-5 text-red-500" />
+                      <h2 className="text-xl font-bold text-red-600">
+                        Zona de Perigo
+                      </h2>
+                    </div>
+
+                    {!showDeleteConfirm ? (
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">Apagar minha conta</p>
+                          <p className="text-sm text-muted-foreground">
+                            Sua conta será desativada permanentemente.
+                          </p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          className="border-red-400 text-red-600 hover:bg-red-50"
+                          onClick={() => setShowDeleteConfirm(true)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Apagar conta
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-3">
+                        <p className="text-red-700 font-semibold flex items-center gap-2">
+                          <AlertTriangle className="h-4 w-4" />
+                          Tem certeza? Esta ação não pode ser desfeita.
+                        </p>
+                        <p className="text-sm text-red-600">
+                          Sua conta será desativada e você perderá acesso ao Hub
+                          do Saber.
+                        </p>
+                        <div className="flex gap-3">
+                          <Button
+                            onClick={handleDeleteAccount}
+                            disabled={deletingAccount}
+                            className="bg-red-600 hover:bg-red-700 text-white"
+                          >
+                            {deletingAccount ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Apagando...
+                              </>
+                            ) : (
+                              <>
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Sim, apagar minha conta
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => setShowDeleteConfirm(false)}
+                            disabled={deletingAccount}
+                          >
+                            Cancelar
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -695,7 +791,7 @@ const Profile = () => {
             )}
           </TabsContent>
 
-          {/* ✅ Aba: Feedback — corrigido */}
+          {/* Aba: Feedback */}
           <TabsContent value="feedback">
             <FeedbackTab
               userId={userData.id ?? ""}

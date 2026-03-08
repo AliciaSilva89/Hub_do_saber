@@ -7,7 +7,7 @@ import br.com.hubdosaber.feedback.service.FeedbackService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/feedbacks")
+@RequestMapping("/feedbacks")
 public class FeedbackController {
 
     private final FeedbackService service;

@@ -1,7 +1,5 @@
 // src/services/groupService.ts
-import axios from "axios";
-
-const API_BASE = "http://localhost:8080/api";
+import axiosInstance from "./axiosConfig"; // ✅ substituído
 
 export interface Group {
   id: string;
@@ -25,11 +23,6 @@ export interface GroupDetail extends Group {
   onlineMembers: number;
 }
 
-function getAuthHeaders() {
-  const token = localStorage.getItem("hubdosaber-token");
-  return { Authorization: `Bearer ${token}` };
-}
-
 function mapGroup(apiGroup: any): Group {
   return {
     id: apiGroup.id,
@@ -49,9 +42,7 @@ function mapGroup(apiGroup: any): Group {
 }
 
 export async function fetchAllGroups(): Promise<Group[]> {
-  const response = await axios.get(`${API_BASE}/group`, {
-    headers: getAuthHeaders(),
-  });
+  const response = await axiosInstance.get("/group", {}); // ✅ URL relativa
   const groups = Array.isArray(response.data) ? response.data : [];
   console.log(`✅ Todos os grupos: ${groups.length}`);
   return groups.map(mapGroup);
@@ -59,10 +50,9 @@ export async function fetchAllGroups(): Promise<Group[]> {
 
 export async function fetchMyGroups(): Promise<Group[]> {
   try {
-    // ✅ CORRIGIDO: usa ?mygroup=true igual ao GroupController.java
-    const response = await axios.get(`${API_BASE}/group`, {
+    const response = await axiosInstance.get("/group", {
+      // ✅ URL relativa
       params: { mygroup: true },
-      headers: getAuthHeaders(),
     });
     const groups = Array.isArray(response.data) ? response.data : [];
     console.log(`✅ Meus grupos: ${groups.length}`);
@@ -74,9 +64,7 @@ export async function fetchMyGroups(): Promise<Group[]> {
 }
 
 export async function fetchGroupDetail(groupId: string): Promise<GroupDetail> {
-  const response = await axios.get(`${API_BASE}/group/${groupId}`, {
-    headers: getAuthHeaders(),
-  });
+  const response = await axiosInstance.get(`/group/${groupId}`); // ✅ URL relativa
   const g = response.data;
   return {
     ...mapGroup(g),
@@ -87,8 +75,8 @@ export async function fetchGroupDetail(groupId: string): Promise<GroupDetail> {
 }
 
 export async function joinGroup(groupId: string): Promise<void> {
-  await axios.post(`${API_BASE}/group/join`, null, {
+  await axiosInstance.post("/group/join", null, {
+    // ✅ URL relativa
     params: { groupId },
-    headers: getAuthHeaders(),
   });
 }

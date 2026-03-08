@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import groupRoutes from "./routes/group.routes";
 import feedbackRoutes from "./routes/feedbackRoutes"; // ✅ adicionar
+import authRoutes from "./routes/auth.routes";
 
 const app = express();
 
@@ -13,6 +14,7 @@ const app = express();
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cookieParser());
+app.use("/auth", authRoutes);
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:8081";
 const DEFAULT_ALLOWED = [FRONTEND_URL, "http://localhost:8080"];
@@ -34,7 +36,7 @@ app.use(
 // =======================
 
 app.use("/bff/group", groupRoutes);
-app.use("/feedbacks", feedbackRoutes); // ✅ adicionar
+app.use("/bff/feedbacks", feedbackRoutes); 
 
 // =======================
 // 🚨 Tratamento global de erro

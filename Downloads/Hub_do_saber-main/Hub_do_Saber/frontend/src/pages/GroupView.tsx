@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
 import {
   Users,
   MapPin,
@@ -15,10 +16,13 @@ import {
   Loader2,
   MessageSquare,
   Trash2,
+  Pencil,
+  X,
 } from "lucide-react";
 import { fetchGroupDetail, joinGroup } from "@/services/groupService";
 import type { GroupDetail } from "@/services/groupService";
 import axios from "axios";
+import LogoLink from "@/components/LogoLink";
 
 const GroupView = () => {
   const { id } = useParams<{ id: string }>();
@@ -31,6 +35,13 @@ const GroupView = () => {
   const [isAlreadyMember, setIsAlreadyMember] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
+  // ✅ Estados do modal de edição
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
   useEffect(() => {
     const sendHeartbeat = async () => {
       const token = localStorage.getItem("hubdosaber-token");
@@ -39,9 +50,7 @@ const GroupView = () => {
         await axios.post(
           "http://localhost:8080/api/users/me/heartbeat",
           {},
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
+          { headers: { Authorization: `Bearer ${token}` } },
         );
       } catch (error) {
         console.error("❌ Erro ao enviar heartbeat:", error);
@@ -132,7 +141,6 @@ const GroupView = () => {
     }
   };
 
-  // ✅ Apagar grupo — só permitido se o usuário for o dono e estiver sozinho
   const handleDelete = async () => {
     if (!id || !groupData) return;
 
@@ -162,6 +170,49 @@ const GroupView = () => {
       alert(err.response?.data || "Erro ao apagar o grupo.");
     } finally {
       setDeleting(false);
+    }
+  };
+
+  // ✅ Abre o modal já preenchido com os dados atuais
+  const handleOpenEdit = () => {
+    if (!groupData) return;
+    setEditName(groupData.name);
+    setEditDescription(groupData.description || "");
+    setEditError(null);
+    setShowEditModal(true);
+  };
+
+  // ✅ Salva as alterações via PUT /api/group/{id}
+  const handleSaveEdit = async () => {
+    if (!id || !editName.trim()) {
+      setEditError("O nome do grupo é obrigatório.");
+      return;
+    }
+
+    const token = localStorage.getItem("hubdosaber-token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setEditError(null);
+
+      await axios.put(
+        `http://localhost:8080/api/group/${id}`,
+        { name: editName.trim(), description: editDescription.trim() },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      // Recarrega os dados do grupo
+      const updatedData = await fetchGroupDetail(id);
+      setGroupData(updatedData);
+      setShowEditModal(false);
+    } catch (err: any) {
+      setEditError(err.response?.data || "Erro ao salvar alterações.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -218,31 +269,26 @@ const GroupView = () => {
 
   const participantsCount = uniqueMembers.length;
   const availableSlots = Math.max(groupData.maxMembers - participantsCount, 0);
-
-  // ✅ Verifica se o usuário logado é o dono
   const isOwner = String(groupData.ownerId) === String(currentUserId);
-
-  // ✅ Pode apagar somente se for dono e estiver sozinho
   const canDelete = isOwner && participantsCount <= 1;
 
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center gap-3">
-            <img
-              src="/logo.png"
-              alt="Hub do Saber"
-              className="w-20 h-20 rounded-lg"
-            />
-            <span className="font-semibold text-lg">Hub do Saber</span>
-          </div>
+          <LogoLink size="lg" />
           <nav className="flex items-center gap-6">
             <Link
               to="/dashboard"
               className="text-muted-foreground hover:text-primary"
             >
               Grupos
+            </Link>
+            <Link
+              to="/chats"
+              className="text-muted-foreground hover:text-primary"
+            >
+              Chats
             </Link>
             <Link
               to="/profile"
@@ -277,13 +323,24 @@ const GroupView = () => {
               <CardContent className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <h1 className="text-3xl font-bold mb-2">
-                      {groupData.name}
-                    </h1>
+                    <div className="flex items-center gap-3 mb-2">
+                      <h1 className="text-3xl font-bold">{groupData.name}</h1>
+                      {/* ✅ Botão de editar — só para o dono */}
+                      {isOwner && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={handleOpenEdit}
+                          title="Editar grupo"
+                          className="text-muted-foreground hover:text-primary"
+                        >
+                          <Pencil className="h-5 w-5" />
+                        </Button>
+                      )}
+                    </div>
                     <Badge variant="secondary" className="mb-4">
                       {groupData.disciplineName}
                     </Badge>
-                    {/* ✅ Badge de Monitoria */}
                     {groupData.monitoring && (
                       <Badge variant="outline" className="ml-2 mb-4">
                         🎓 Monitoria
@@ -338,7 +395,6 @@ const GroupView = () => {
                     </Button>
                   )}
 
-                  {/* ✅ Botão apagar — só aparece para o dono sozinho */}
                   {canDelete && (
                     <Button
                       onClick={handleDelete}
@@ -360,7 +416,6 @@ const GroupView = () => {
                     </Button>
                   )}
 
-                  {/* ✅ Aviso se é dono mas há outros membros */}
                   {isOwner && !canDelete && (
                     <p className="text-xs text-muted-foreground w-full mt-1">
                       ⚠️ Para apagar o grupo, todos os outros membros precisam
@@ -383,7 +438,6 @@ const GroupView = () => {
                     <p className="font-medium">{groupData.disciplineName}</p>
                   </div>
                 </div>
-
                 <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                   <User className="h-5 w-5 text-primary" />
                   <div>
@@ -391,7 +445,6 @@ const GroupView = () => {
                     <p className="font-medium">{groupData.ownerName}</p>
                   </div>
                 </div>
-
                 <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                   <MapPin className="h-5 w-5 text-primary" />
                   <div>
@@ -401,8 +454,6 @@ const GroupView = () => {
                     <p className="font-medium">{groupData.universityName}</p>
                   </div>
                 </div>
-
-                {/* ✅ Horário — APENAS para grupos de monitoria */}
                 {groupData.monitoring && groupData.schedule && (
                   <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                     <Clock className="h-5 w-5 text-primary" />
@@ -496,6 +547,86 @@ const GroupView = () => {
           </div>
         </div>
       </main>
+
+      {/* ✅ Modal de edição */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-xl shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold">Editar Grupo</h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowEditModal(false)}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">
+                  Nome do grupo *
+                </label>
+                <Input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Nome do grupo"
+                  maxLength={100}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-1 block">
+                  Descrição
+                </label>
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  placeholder="Descreva o objetivo do grupo..."
+                  maxLength={500}
+                  rows={4}
+                  className="w-full px-3 py-2 border rounded-md bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <p className="text-xs text-muted-foreground text-right mt-1">
+                  {editDescription.length}/500
+                </p>
+              </div>
+
+              {editError && (
+                <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                  ❌ {editError}
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowEditModal(false)}
+                disabled={saving}
+              >
+                Cancelar
+              </Button>
+              <Button
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                onClick={handleSaveEdit}
+                disabled={saving}
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  "Salvar alterações"
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
