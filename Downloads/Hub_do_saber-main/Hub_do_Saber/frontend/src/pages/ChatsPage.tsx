@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
+import LogoLink from "@/components/LogoLink";
 
 interface GroupSummary {
   id: string;
@@ -283,14 +284,7 @@ const ChatsPage = () => {
       {/* Header */}
       <header className="border-b bg-card px-6 py-4 flex-shrink-0">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center gap-3">
-            <img
-              src="/logo.png"
-              alt="Hub do Saber"
-              className="w-10 h-10 rounded-lg"
-            />
-            <span className="font-semibold text-lg">Hub do Saber</span>
-          </div>
+          <LogoLink size="lg" />
           <nav className="flex items-center gap-6">
             <Link
               to="/dashboard"
@@ -391,17 +385,7 @@ const ChatsPage = () => {
             <>
               {/* Chat Header */}
               <div className="border-b p-4 bg-card flex items-center justify-between flex-shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
-                    {selectedGroupName[0]?.toUpperCase()}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">{selectedGroupName}</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Grupo de estudos
-                    </p>
-                  </div>
-                </div>
+                <LogoLink size="lg" />
                 <Button
                   variant="outline"
                   size="sm"

@@ -16,6 +16,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Loader2 } from "lucide-react";
 import axiosInstance from "@/services/axiosConfig";
 import { getUserProfile } from "@/services/userService";
+import LogoLink from "@/components/LogoLink";
 
 interface Discipline {
   id: string;
@@ -119,14 +120,7 @@ const CreateGroup = () => {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center gap-3">
-            <img
-              src="/logo.png"
-              alt="Logo da plataforma Hub do Saber"
-              className="w-20 h-20 rounded-lg object-cover"
-            />
-            <span className="font-semibold text-lg">Hub do Saber</span>
-          </div>
+          <LogoLink size="lg" />
           <nav className="flex items-center gap-6">
             <Link
               to="/dashboard"

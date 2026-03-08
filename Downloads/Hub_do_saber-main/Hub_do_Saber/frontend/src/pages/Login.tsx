@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, User } from "lucide-react";
 import axios from "axios"; 
+import LogoLink from "@/components/LogoLink";
 
 const Login = () => {
     const navigate = useNavigate(); 

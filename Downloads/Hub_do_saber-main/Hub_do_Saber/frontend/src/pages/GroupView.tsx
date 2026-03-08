@@ -22,6 +22,7 @@ import {
 import { fetchGroupDetail, joinGroup } from "@/services/groupService";
 import type { GroupDetail } from "@/services/groupService";
 import axios from "axios";
+import LogoLink from "@/components/LogoLink";
 
 const GroupView = () => {
   const { id } = useParams<{ id: string }>();
@@ -275,14 +276,7 @@ const GroupView = () => {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center gap-3">
-            <img
-              src="/logo.png"
-              alt="Hub do Saber"
-              className="w-20 h-20 rounded-lg"
-            />
-            <span className="font-semibold text-lg">Hub do Saber</span>
-          </div>
+          <LogoLink size="lg" />
           <nav className="flex items-center gap-6">
             <Link
               to="/dashboard"

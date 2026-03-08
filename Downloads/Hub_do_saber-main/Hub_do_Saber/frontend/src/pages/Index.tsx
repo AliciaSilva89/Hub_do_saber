@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import heroImage from "../assets/hero-image.png";
 import { getFeedbacks, FeedbackDTO } from "@/services/feedbackService"; // ✅
+import LogoLink from "@/components/LogoLink";
 
 const Index = () => {
   const [feedbacks, setFeedbacks] = useState<FeedbackDTO[]>([]);
@@ -31,14 +32,7 @@ const Index = () => {
       {/* Header */}
       <header className="border-b bg-card px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center gap-3">
-            <img
-              src="/logo.png"
-              alt="Logo da plataforma Hub do Saber"
-              className="w-20 h-20 rounded-lg object-cover"
-            />
-            <span className="font-semibold text-lg">Hub do Saber</span>
-          </div>
+          <LogoLink size="lg" />
           <nav className="flex items-center gap-6">
             <Link
               to="/login"

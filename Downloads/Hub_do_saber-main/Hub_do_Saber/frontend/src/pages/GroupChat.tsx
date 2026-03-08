@@ -17,6 +17,7 @@ import {
 import { fetchGroupDetail } from "@/services/groupService";
 import axios from "axios";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
+import LogoLink from "@/components/LogoLink";
 
 interface Message {
   id: string;
@@ -290,14 +291,7 @@ const GroupChat = () => {
       {/* Header */}
       <header className="border-b bg-card px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center gap-3">
-            <img
-              src="/logo.png"
-              alt="Hub do Saber"
-              className="w-20 h-20 rounded-lg"
-            />
-            <span className="font-semibold text-lg">Hub do Saber</span>
-          </div>
+          <LogoLink size="lg" />
           <nav className="flex items-center gap-6">
             <Link
               to="/dashboard"

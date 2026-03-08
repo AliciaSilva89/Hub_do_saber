@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Search, Users, MapPin, Loader2, RefreshCw } from "lucide-react";
 import { fetchAllGroups, fetchMyGroups, Group } from "@/services/groupService";
+import LogoLink from "@/components/LogoLink";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -111,14 +112,7 @@ const Dashboard = () => {
       {/* ✅ Header corrigido — sem div aninhada */}
       <header className="border-b bg-card px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center gap-3">
-            <img
-              src="/logo.png"
-              alt="Hub do Saber"
-              className="w-20 h-20 rounded-lg"
-            />
-            <span className="font-semibold text-lg">Hub do Saber</span>
-          </div>
+          <LogoLink size="lg" />
           <nav className="flex items-center gap-6">
             <Link to="/dashboard" className="text-foreground font-medium">
               Grupos
