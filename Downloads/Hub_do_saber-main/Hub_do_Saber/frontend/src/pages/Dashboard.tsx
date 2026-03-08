@@ -123,6 +123,12 @@ const Dashboard = () => {
             <Link to="/dashboard" className="text-foreground font-medium">
               Grupos
             </Link>
+            <Link
+              to="/chats"
+              className="text-muted-foreground hover:text-primary"
+            >
+              Chats
+            </Link>
             <button
               onClick={() => navigate("/profile")}
               className="text-muted-foreground hover:text-primary transition-colors"

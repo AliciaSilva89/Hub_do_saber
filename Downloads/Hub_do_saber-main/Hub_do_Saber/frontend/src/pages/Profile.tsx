@@ -329,6 +329,12 @@ const Profile = () => {
             >
               Perfil
             </Link>
+            <Link
+              to="/chats"
+              className="text-muted-foreground hover:text-primary"
+            >
+              Chats
+            </Link>
             <Button
               onClick={() => navigate("/create-group")}
               className="bg-black text-white"

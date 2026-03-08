@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-// Suas páginas
 import Index from "@/pages/Index";
 import Login from "@/pages/Login";
 import Cadastro from "@/pages/Cadastro";
@@ -13,6 +12,7 @@ import GroupChat from "@/pages/GroupChat";
 import CreateGroup from "@/pages/CreateGroup";
 import NotFound from "@/pages/NotFound";
 import Saiba from "@/pages/Saiba";
+import ChatsPage from "@/pages/ChatsPage"; // ✅ alias corrigido
 
 const queryClient = new QueryClient();
 
@@ -22,8 +22,8 @@ function App() {
       <TooltipProvider>
         <BrowserRouter
           future={{
-            v7_startTransition: true,      // ✅ ADICIONADO
-            v7_relativeSplatPath: true,    // ✅ ADICIONADO
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
           }}
         >
           <Routes>
@@ -36,6 +36,8 @@ function App() {
             <Route path="/group/:id/chat" element={<GroupChat />} />
             <Route path="/create-group" element={<CreateGroup />} />
             <Route path="/saiba" element={<Saiba />} />
+            <Route path="/chats" element={<ChatsPage />} />{" "}
+            {/* ✅ ANTES do wildcard */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
